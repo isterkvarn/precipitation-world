@@ -1,0 +1,106 @@
+[gd_scene load_steps=15 format=3 uid="uid://dup7qem7xyn0a"]
+
+[ext_resource type="Texture2D" uid="uid://b2cahf1gn0m3g" path="res://icon.svg" id="1_6uaea"]
+[ext_resource type="Script" path="res://test_ai/test_ai.gd" id="1_e3exb"]
+[ext_resource type="PackedScene" uid="uid://blbt4f5slrg4k" path="res://test_ai/test_prey.tscn" id="3_c444i"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5cf33"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_mdkdr"]
+material = SubResource("StandardMaterial3D_5cf33")
+radius = 0.8
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iameu"]
+albedo_color = Color(0, 1, 0, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8nbeq"]
+size = Vector3(10, 3, 8)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_7ua8t"]
+radius = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gwmte"]
+transparency = 1
+blend_mode = 1
+albedo_color = Color(0, 1, 0, 0.168627)
+
+[sub_resource type="SphereMesh" id="SphereMesh_8gk8r"]
+radius = 2.0
+height = 4.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_ecs0t"]
+size = Vector3(10, 3, 8)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_u72rt"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rfor0"]
+albedo_texture = ExtResource("1_6uaea")
+uv1_offset = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_j51mt"]
+
+[node name="TestAI" type="CharacterBody3D" groups=["herd_agent"]]
+script = ExtResource("1_e3exb")
+
+[node name="Debugball" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.39181)
+visible = false
+mesh = SubResource("SphereMesh_mdkdr")
+
+[node name="Debugball2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.39181)
+visible = false
+material_override = SubResource("StandardMaterial3D_iameu")
+mesh = SubResource("SphereMesh_mdkdr")
+
+[node name="RayMid" type="RayCast3D" parent="."]
+target_position = Vector3(0, 0, -4)
+debug_shape_custom_color = Color(0, 0, 1, 1)
+debug_shape_thickness = 5
+
+[node name="Perception" type="Area3D" parent="."]
+
+[node name="BoxPerception" type="CollisionShape3D" parent="Perception"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+shape = SubResource("BoxShape3D_8nbeq")
+
+[node name="BallPerception" type="CollisionShape3D" parent="Perception"]
+shape = SubResource("SphereShape3D_7ua8t")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Perception"]
+visible = false
+material_override = SubResource("StandardMaterial3D_gwmte")
+mesh = SubResource("SphereMesh_8gk8r")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Perception"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+visible = false
+material_override = SubResource("StandardMaterial3D_gwmte")
+mesh = SubResource("BoxMesh_ecs0t")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_u72rt")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_rfor0")
+mesh = SubResource("BoxMesh_j51mt")
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.51)
+light_color = Color(1, 0, 0, 1)
+light_energy = 10.0
+spot_range = 10.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.5
+target_desired_distance = 0.5
+path_max_distance = 1.01
+path_postprocessing = 1
+debug_enabled = true
+
+[node name="TestPrey" parent="." node_paths=PackedStringArray("blackboard", "actor") instance=ExtResource("3_c444i")]
+blackboard = NodePath("@Node@17426")
+actor = NodePath("..")

@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://d3j2gep3jk7u8"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_dmxjm"]
+size = Vector3(4, 4, 4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gwect"]
+size = Vector3(4, 4, 4)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_25pwr"]
+vertices = PackedVector3Array(-2, 2.5, -2, -2, 2.5, 2, 2, 2.5, 2, 2, 2.5, -2)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
+agent_height = 0.0
+agent_radius = 0.0
+
+[node name="MeshLib" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_dmxjm")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+shape = SubResource("BoxShape3D_gwect")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="MeshInstance3D"]
+navigation_mesh = SubResource("NavigationMesh_25pwr")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="MeshInstance3D/NavigationRegion3D"]
+mesh = SubResource("BoxMesh_dmxjm")

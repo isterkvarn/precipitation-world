@@ -1,0 +1,57 @@
+[gd_scene load_steps=12 format=3 uid="uid://blbt4f5slrg4k"]
+
+[ext_resource type="Script" path="res://addons/beehave/nodes/beehave_tree.gd" id="1_4uf56"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/sequence.gd" id="2_2hn42"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/selector_reactive.gd" id="2_2vypb"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/decorators/delayer.gd" id="2_3fqsy"]
+[ext_resource type="Script" path="res://test_ai/IsScared.gd" id="3_1o0om"]
+[ext_resource type="Script" path="res://test_ai/new_roam_target.gd" id="3_hvvb3"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/decorators/time_limiter.gd" id="4_idioh"]
+[ext_resource type="Script" path="res://test_ai/check_arrival.gd" id="5_abkoe"]
+[ext_resource type="Script" path="res://test_ai/Flee.gd" id="5_ok1eb"]
+[ext_resource type="Script" path="res://test_ai/is_hungry.gd" id="6_toi5i"]
+[ext_resource type="Script" path="res://test_ai/FindFood.gd" id="7_fwypn"]
+
+[node name="TestPrey" type="Node" node_paths=PackedStringArray("blackboard", "actor")]
+script = ExtResource("1_4uf56")
+actor_node_path = NodePath("..")
+blackboard = NodePath("@Node@17428")
+actor = NodePath("")
+
+[node name="SelectorReactiveComposite" type="Node" parent="."]
+script = ExtResource("2_2vypb")
+
+[node name="SequenceComposite" type="Node" parent="SelectorReactiveComposite"]
+script = ExtResource("2_2hn42")
+
+[node name="IsScaredCondition" type="Node" parent="SelectorReactiveComposite/SequenceComposite"]
+script = ExtResource("3_1o0om")
+
+[node name="Flee" type="Node" parent="SelectorReactiveComposite/SequenceComposite"]
+script = ExtResource("5_ok1eb")
+
+[node name="SequenceComposite3" type="Node" parent="SelectorReactiveComposite"]
+script = ExtResource("2_2hn42")
+
+[node name="IsHungryCondition" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
+script = ExtResource("6_toi5i")
+
+[node name="FindFood" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
+script = ExtResource("7_fwypn")
+
+[node name="SequenceComposite2" type="Node" parent="SelectorReactiveComposite"]
+script = ExtResource("2_2hn42")
+
+[node name="Roam" type="Node" parent="SelectorReactiveComposite/SequenceComposite2"]
+script = ExtResource("2_3fqsy")
+wait_time = 1.0
+
+[node name="NewWanderTarget" type="Node" parent="SelectorReactiveComposite/SequenceComposite2/Roam"]
+script = ExtResource("3_hvvb3")
+
+[node name="TimeLimiterDecorator" type="Node" parent="SelectorReactiveComposite/SequenceComposite2"]
+script = ExtResource("4_idioh")
+wait_time = 6.0
+
+[node name="Roam" type="Node" parent="SelectorReactiveComposite/SequenceComposite2/TimeLimiterDecorator"]
+script = ExtResource("5_abkoe")
