@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://drm6gs3ctdt5m"]
+[gd_scene load_steps=6 format=3 uid="uid://drm6gs3ctdt5m"]
 
 [ext_resource type="Script" path="res://food/food.gd" id="1_dkrli"]
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_hjq8h"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_ch1j6"]
+size = Vector3(0.1, 0.5, 0.1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ikjap"]
 albedo_color = Color(0, 1, 0, 1)
@@ -10,13 +11,22 @@ albedo_color = Color(0, 1, 0, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_26jf8"]
 size = Vector3(0.1, 0.5, 0.1)
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_jk0ky"]
+radius = 4.0
+
 [node name="Food" type="Area3D" groups=["food"]]
 script = ExtResource("1_dkrli")
 
-[node name="GrowthArea" type="CollisionShape3D" parent="."]
-shape = SubResource("SphereShape3D_hjq8h")
+[node name="FoodArea" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("BoxShape3D_ch1j6")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 material_override = SubResource("StandardMaterial3D_ikjap")
 mesh = SubResource("BoxMesh_26jf8")
+
+[node name="GrowthArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GrowthArea"]
+shape = SubResource("SphereShape3D_jk0ky")
