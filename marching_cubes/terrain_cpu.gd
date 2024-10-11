@@ -302,8 +302,8 @@ func tock():
 	var newtime := Time.get_ticks_usec()
 	print("ticktock time: ", (newtime - time) / 1000000.0)
 
-
 func get_at(x, y, z, chunk) -> float:
+	#return noise.get_noise_3d(x, y, z)
 	return chunk[x].get_pixel(y, z).r
 	
 func generate_balls(chunk):
@@ -421,7 +421,7 @@ func march_chunk(chunk):
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	noise.frequency = 0.1
+	noise.frequency = 0.01
 	
 	# should we even bother saving the noise into a texture or just call the function every time?
 	print("Generating noise")
@@ -454,7 +454,6 @@ func _ready() -> void:
 	#generate_balls(chunk)
 	
 	march_chunk(chunk)
-
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
