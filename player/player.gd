@@ -25,9 +25,10 @@ func _physics_process(delta: float) -> void:
 	var up_down = Input.get_axis("down", "up")
 	var direction := (transform.basis * Vector3(input_dir.x, up_down, input_dir.y)).normalized()
 	if direction:
-		velocity.x = direction.x * SPEED
-		velocity.y = direction.y * SPEED
-		velocity.z = direction.z * SPEED
+		velocity = direction * SPEED
+		var fast = Input.is_action_pressed("speedup")
+		if fast:
+			velocity *= 3;
 	else:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 		velocity.y = move_toward(velocity.y, 0, SPEED)
