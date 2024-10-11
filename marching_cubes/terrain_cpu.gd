@@ -14,9 +14,7 @@ func tick():
 
 func tock():
 	var newtime = Time.get_ticks_usec()
-	print("===================== time ========================")
-	print((newtime - time) / 1000000.0)
-	print("===================== time ========================")
+	print("ticktock time: ", (newtime - time) / 1000000.0)
 
 
 func get_at(x, y, z, chunk):
