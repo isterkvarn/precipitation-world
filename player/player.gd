@@ -28,7 +28,7 @@ func _physics_process(delta: float) -> void:
 		velocity = direction * SPEED
 		var fast = Input.is_action_pressed("speedup")
 		if fast:
-			velocity *= 3;
+			velocity *= 5;
 	else:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 		velocity.y = move_toward(velocity.y, 0, SPEED)

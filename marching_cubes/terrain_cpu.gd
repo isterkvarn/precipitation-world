@@ -1,5 +1,7 @@
 extends Node3D
 
+
+var tri_mutex = Mutex.new()
 # tables from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 const TRIANGULATIONS = [
 [],
@@ -257,7 +259,8 @@ const TRIANGULATIONS = [
 [1, 3, 8, 9, 1, 8],
 [0, 9, 1],
 [0, 3, 8],
-[]]
+[]
+]
 
 const POINTS := [
 	Vector3i(0, 0, 0),
@@ -285,39 +288,52 @@ const EDGES := [
 	Vector2i(3, 7),
 ]
 
-@export var CHUNK_SIZE := 100
+@export var CHUNK_SIZE := 30
+@export var RENDER_DISTANCE := 3 # in chunks
 const BLOCK_SIZE := 1.
 const BALL_RADIUS := BLOCK_SIZE / 8.
 const BALL_HEIGHT := 2 * BALL_RADIUS
 var noise := FastNoiseLite.new()
 
-@export var threshold := 0.6
+var loaded_mutex = Mutex.new()
+var loaded_chunks := {} # contains the currently shown chunks
+
+var generated_mutex = Mutex.new()
+var generated_chunks := {} # contains meshes for already computed chunks
+
+@export var threshold := 0.3
 
 var time := 0.
 
 func tick():
 	time = Time.get_ticks_usec()
 
-func tock():
+func tock(message: String = "ticktock time"):
 	var newtime := Time.get_ticks_usec()
-	print("ticktock time: ", (newtime - time) / 1000000.0)
+	print(message + ": ", (newtime - time) / 1000000.0)
 
-func get_at(x, y, z, chunk) -> float:
-	#return noise.get_noise_3d(x, y, z)
-	return chunk[x].get_pixel(y, z).r
+func march_meshInstance() -> MeshInstance3D:
+	var marched := MeshInstance3D.new()
+	marched.material_override = StandardMaterial3D.new()
+	marched.material_override.set_cull_mode(2) # CULL_DISABLED
+	marched.material_override.albedo_color = Color(1, 0.2, 0.2)
+	return marched
+
+func get_at(coord: Vector3i) -> float:
+	return noise.get_noise_3dv(coord)
+	#return chunk[x].get_pixel(y, z).r
 	
-func generate_balls(chunk):
-	print("Generating balls")
+func generate_balls(coord) -> void:
 	tick()
 	var base_sphere := MeshInstance3D.new()
 	var sphere_mesh := SphereMesh.new()
 	sphere_mesh.radius = BALL_RADIUS
 	sphere_mesh.height = BALL_HEIGHT
 	base_sphere.mesh = sphere_mesh
-	for x in range(CHUNK_SIZE):
-		for y in range(CHUNK_SIZE):
-			for z in range(CHUNK_SIZE):
-				var val := get_at(x, y, z, chunk)
+	for x in range(CHUNK_SIZE + 1):
+		for y in range(CHUNK_SIZE + 1):
+			for z in range(CHUNK_SIZE + 1):
+				var val := get_at(Vector3i(x, y, z))
 				if (val > threshold):
 					var sphere := base_sphere.duplicate()
 					sphere.material_override = StandardMaterial3D.new() # probably a pointer so can't be duplicated properly
@@ -325,22 +341,25 @@ func generate_balls(chunk):
 					
 					sphere.position = Vector3(x, y ,z) * BLOCK_SIZE
 					add_child(sphere)
-	tock()
+	tock("time to generate balls")
 
 # slow but cool
-func march_animation(chunk):
-	print("Animating mesh generation")
+func march_animation(coord: Vector3i) -> void:
+	loaded_mutex.lock()
+	loaded_chunks[coord] = 1.
+	loaded_mutex.unlock()
 	
 	tick()
 	var box := MeshInstance3D.new()
 	var box_mesh := BoxMesh.new()
 	box.mesh = box_mesh
 	add_child(box)
-	for x in range(CHUNK_SIZE - 1):
-		for y in range(CHUNK_SIZE - 1):
-			await get_tree().create_timer(0.0).timeout # nice animation
-			for z in range(CHUNK_SIZE - 1):
-				box.position = Vector3(x + 0.5, y + 0.5 ,z + 0.5) * BLOCK_SIZE
+	for x in range(CHUNK_SIZE):
+		await get_tree().create_timer(0.1).timeout # nice animation
+		for y in range(CHUNK_SIZE):
+			for z in range(CHUNK_SIZE):
+				var pos := Vector3i(x, y, z) + coord * CHUNK_SIZE
+				box.position = (Vector3(pos) + Vector3(0.5, 0.5, 0.5)) * BLOCK_SIZE
 				
 				var marched := MeshInstance3D.new()
 				marched.material_override = StandardMaterial3D.new()
@@ -350,20 +369,29 @@ func march_animation(chunk):
 				
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
 				
-				# get triangulation index from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
+				
+				var pos1 := pos + Vector3i(0, 0, 1)
+				var pos2 := pos + Vector3i(1, 0, 1)
+				var pos3 := pos + Vector3i(1, 0, 0)
+				var pos4 := pos + Vector3i(0, 1, 0)
+				var pos5 := pos + Vector3i(0, 1, 1)
+				var pos6 := pos + Vector3i(1, 1, 1)
+				var pos7 := pos + Vector3i(1, 1, 0)
+				
+				# get triangulation index. Inspired from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 				var idx = 0b00000000
-				idx |= int(get_at(x, y, z, chunk) < threshold) << 0
-				idx |= int(get_at(x, y, z+1, chunk) < threshold) << 1
-				idx |= int(get_at(x+1, y, z+1, chunk) < threshold) << 2
-				idx |= int(get_at(x+1, y, z, chunk) < threshold) << 3
-				idx |= int(get_at(x, y+1, z, chunk) < threshold) << 4
-				idx |= int(get_at(x, y+1, z+1, chunk) < threshold) << 5
-				idx |= int(get_at(x+1, y+1, z+1, chunk) < threshold) << 6
-				idx |= int(get_at(x+1, y+1, z, chunk) < threshold) << 7
+				idx |= int(get_at(pos) < threshold) << 0
+				idx |= int(get_at(pos1) < threshold) << 1
+				idx |= int(get_at(pos2) < threshold) << 2
+				idx |= int(get_at(pos3) < threshold) << 3
+				idx |= int(get_at(pos4) < threshold) << 4
+				idx |= int(get_at(pos5) < threshold) << 5
+				idx |= int(get_at(pos6) < threshold) << 6
+				idx |= int(get_at(pos7) < threshold) << 7
 				
 				for edge in TRIANGULATIONS[idx]:
-					var p0 = POINTS[EDGES[edge].x] + Vector3i(x, y, z)
-					var p1 = POINTS[EDGES[edge].y] + Vector3i(x, y, z)
+					var p0 = POINTS[EDGES[edge].x] + pos
+					var p1 = POINTS[EDGES[edge].y] + pos
 					st.set_smooth_group(-1) # flat shading
 					st.add_vertex((p0 + p1) / 2.)
 
@@ -374,38 +402,48 @@ func march_animation(chunk):
 				marched.mesh = mesh
 				add_child(marched)
 	remove_child(box)
-	tock()
-
-func march_chunk(chunk):
-	print("Generating chunk")
-	tick()
 	
-	var marched := MeshInstance3D.new()
-	marched.material_override = StandardMaterial3D.new()
-	marched.material_override.set_cull_mode(2) # CULL_DISABLED
-	marched.material_override.albedo_color = Color(1, 0.2, 0.2)
+	tock("time to animate chunk")
+
+func march_chunk(coord: Vector3i, TRI) -> void:
+	loaded_mutex.lock()
+	loaded_chunks[coord] = 1.
+	loaded_mutex.unlock()
+	
+	#var time = Time.get_ticks_usec()
+	
+	var marched = march_meshInstance()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	
-	for x in range(CHUNK_SIZE - 1):
-		for y in range(CHUNK_SIZE - 1):
-			for z in range(CHUNK_SIZE - 1):
+	for x in range(CHUNK_SIZE):
+		for y in range(CHUNK_SIZE):
+			for z in range(CHUNK_SIZE):
+				var pos := Vector3i(x, y, z) + coord * CHUNK_SIZE
+				var pos1 := pos + Vector3i(0, 0, 1)
+				var pos2 := pos + Vector3i(1, 0, 1)
+				var pos3 := pos + Vector3i(1, 0, 0)
+				var pos4 := pos + Vector3i(0, 1, 0)
+				var pos5 := pos + Vector3i(0, 1, 1)
+				var pos6 := pos + Vector3i(1, 1, 1)
+				var pos7 := pos + Vector3i(1, 1, 0)
+				
 				# get triangulation index from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 				var idx = 0b00000000
-				idx |= int(get_at(x, y, z, chunk) < threshold) << 0
-				idx |= int(get_at(x, y, z+1, chunk) < threshold) << 1
-				idx |= int(get_at(x+1, y, z+1, chunk) < threshold) << 2
-				idx |= int(get_at(x+1, y, z, chunk) < threshold) << 3
-				idx |= int(get_at(x, y+1, z, chunk) < threshold) << 4
-				idx |= int(get_at(x, y+1, z+1, chunk) < threshold) << 5
-				idx |= int(get_at(x+1, y+1, z+1, chunk) < threshold) << 6
-				idx |= int(get_at(x+1, y+1, z, chunk) < threshold) << 7
+				idx |= int(get_at(pos) < threshold) << 0
+				idx |= int(get_at(pos1) < threshold) << 1
+				idx |= int(get_at(pos2) < threshold) << 2
+				idx |= int(get_at(pos3) < threshold) << 3
+				idx |= int(get_at(pos4) < threshold) << 4
+				idx |= int(get_at(pos5) < threshold) << 5
+				idx |= int(get_at(pos6) < threshold) << 6
+				idx |= int(get_at(pos7) < threshold) << 7
 				
-				for edge in TRIANGULATIONS[idx]:
+				for edge in TRI[idx]:
 					var p0 = POINTS[EDGES[edge].x] + Vector3i(x, y, z)
 					var p1 = POINTS[EDGES[edge].y] + Vector3i(x, y, z)
 					st.set_smooth_group(-1) # flat shading
-					st.add_vertex((p0 + p1) / 2.)
+					st.add_vertex((p0 + p1) / 2.) # could do some linear interpolation here
 
 	# Commit to a mesh.
 	st.generate_normals()
@@ -414,48 +452,99 @@ func march_chunk(chunk):
 	#st.optimize_indices_for_cache()
 	var mesh := st.commit()
 	
-	marched.mesh = mesh
-	add_child(marched)
+	generated_mutex.lock()
+	generated_chunks[coord] = mesh
+	generated_mutex.unlock()
 	
-	tock()
+	marched.position = coord * CHUNK_SIZE
+	marched.mesh = mesh
+	#add_child(marched) deffered because of threading
+	add_child.call_deferred(marched)
+	
+	#var newtime := Time.get_ticks_usec()
+	#print("time to generate chunk: ", (newtime - time) / 1000000.0)
+
+var chunk_thread: Thread
+
+var worker_threads: Array
+
+func noop():
+	pass
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	noise.frequency = 0.01
+	noise.frequency = 0.05
+	chunk_thread = Thread.new()
 	
-	# should we even bother saving the noise into a texture or just call the function every time?
-	print("Generating noise")
-	tick()
-	var chunk := noise.get_image_3d(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE)
-	tock()
+	var num_threads = RENDER_DISTANCE ** 3
+	# for some reason if this is 3, then 500% (5 cores) of the cpu is used
+	var num_cores = OS.get_processor_count() / 2 - 3
+	if (num_threads > num_cores):
+		num_threads = num_cores
 	
-	# slower because loops in godot slow af
-	#tick()
-	#var chunk_loop := []
-	#chunk_loop.resize(CHUNK_SIZE)
-	#
-	#for x in range(CHUNK_SIZE):
-		#chunk_loop[x] := []
-		#chunk_loop[x].resize(CHUNK_SIZE)
-		#for y in range(CHUNK_SIZE):
-			#chunk_loop[x][y] := []
-			#chunk_loop[x][y].resize(CHUNK_SIZE)
-			#for z in range(CHUNK_SIZE):
-				#chunk_loop[x][y][z] := noise.get_noise_3d(x, y, z)
-	#tock()
-	#
-	#tick()
-	#for x in range(CHUNK_SIZE):
-		#for y in range(CHUNK_SIZE):
-			#for z in range(CHUNK_SIZE):
-				#print(chunk_loop[x][y][z])
-	#tock()
+	print("using ", num_threads, " threads ")
+	for x in range(num_threads):
+		worker_threads.append(Thread.new())
+		worker_threads[x].start(noop) # so that they all are "started"
+	chunk_thread.start(noop) # same here
 	
-	#generate_balls(chunk)
 	
-	march_chunk(chunk)
+	#generate_balls(Vector3i(1,2,3))
+	
+	#march_chunk(Vector3i(1,2,3))
+	#march_animation(Vector3i(0,1,0))
 
+# assumes the coord are in generated_chunks!! (untested)
+func load_chunk(coord: Vector3i) -> void:
+	var marched := march_meshInstance()
+	marched.position = Vector3(coord * CHUNK_SIZE)
+	generated_mutex.lock()
+	marched.mesh = generated_chunks[coord]
+	generated_mutex.unlock()
+
+func duplicate_2d(arr: Array):
+	#tick()
+	var ret: Array
+	ret.resize(len(arr))
+	for i in range(len(arr)):
+		ret[i] = arr[i].duplicate()
+	#tock("time to duplicate") # very small
+	return ret
+
+func get_worker_thread() -> Thread:
+	while true:
+		for worker: Thread in worker_threads:
+			if !worker.is_alive() && worker.is_started():
+				worker.wait_to_finish()
+				return worker
+	return # just so that the compiler is happy about all paths returning
+
+func show_chunk(coord: Vector3i) -> void:
+	loaded_mutex.lock()
+	var has_loaded = loaded_chunks.has(coord)
+	loaded_mutex.unlock()
+	if (!has_loaded):
+		generated_mutex.lock()
+		var has_generated = generated_chunks.has(coord)
+		generated_mutex.unlock()
+		if (has_generated):
+			load_chunk(coord) # never used lol
+		else:
+			var thread := get_worker_thread()
+			thread.start(march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS)))
+
+func show_chunks_around_player(player_chunk: Vector3i) -> void:
+	for x in range(RENDER_DISTANCE):
+		for y in range(RENDER_DISTANCE):
+			for z in range(RENDER_DISTANCE):
+					var chunk_coord := player_chunk + Vector3i(x, y, z) - Vector3i(RENDER_DISTANCE / 2, RENDER_DISTANCE / 2, RENDER_DISTANCE / 2)
+					show_chunk(chunk_coord)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+func _process(_delta: float) -> void:
+	if (chunk_thread.is_started() && !chunk_thread.is_alive()):
+		chunk_thread.wait_to_finish()
+		# big oopsie if there is more than 1 player
+		for player: Node3D in get_tree().get_nodes_in_group("player"):
+			var player_chunk := Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
+			chunk_thread.start(show_chunks_around_player.bind(player_chunk))
