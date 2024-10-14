@@ -1,0 +1,33 @@
+[gd_scene load_steps=6 format=3 uid="uid://bstxmv7r4xc6n"]
+
+[ext_resource type="Script" path="res://pheromone/pheromone.gd" id="1_5ftdt"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_qtckk"]
+radius = 6.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cjenm"]
+transparency = 1
+albedo_color = Color(1, 0, 0, 0.211765)
+
+[sub_resource type="SphereMesh" id="SphereMesh_1mswg"]
+radius = 6.0
+height = 12.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_d85ah"]
+transparency = 1
+albedo_color = Color(0, 1, 0, 0.262745)
+
+[node name="Pheromone" type="Area3D" groups=["pheromone"]]
+script = ExtResource("1_5ftdt")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_qtckk")
+
+[node name="DebugMesh1" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_cjenm")
+mesh = SubResource("SphereMesh_1mswg")
+
+[node name="DebugMesh2" type="MeshInstance3D" parent="."]
+visible = false
+material_override = SubResource("StandardMaterial3D_d85ah")
+mesh = SubResource("SphereMesh_1mswg")

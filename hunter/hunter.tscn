@@ -1,0 +1,116 @@
+[gd_scene load_steps=13 format=3 uid="uid://b3j3gsv6hlime"]
+
+[ext_resource type="Script" path="res://hunter/hunter.gd" id="1_5lry2"]
+[ext_resource type="PackedScene" uid="uid://djlycbbr7gr60" path="res://hunter/hunter_tree.tscn" id="3_iuo1d"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k7qle"]
+albedo_color = Color(0.353858, 0.265655, 0.0883342, 1)
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_offset = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_mqn56"]
+size = Vector3(2, 2, 3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_7ccnk"]
+size = Vector3(0.5, 0.4, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fxfea"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ihakg"]
+radius = 1.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ugos2"]
+radius = 5.0
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_00245"]
+size = Vector3(10, 2, 22)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sa2xy"]
+transparency = 1
+blend_mode = 1
+albedo_color = Color(0, 1, 0, 0.168627)
+
+[sub_resource type="SphereMesh" id="SphereMesh_a1pqd"]
+radius = 2.5
+height = 5.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_rmj8y"]
+size = Vector3(16, 3, 14)
+
+[node name="Hunter" type="CharacterBody3D" groups=["hunter"]]
+script = ExtResource("1_5lry2")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+material_override = SubResource("StandardMaterial3D_k7qle")
+mesh = SubResource("BoxMesh_mqn56")
+skeleton = NodePath("../..")
+
+[node name="Foot" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.2, -1)
+material_override = SubResource("StandardMaterial3D_k7qle")
+mesh = SubResource("BoxMesh_7ccnk")
+
+[node name="Foot2" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.2, -1)
+material_override = SubResource("StandardMaterial3D_k7qle")
+mesh = SubResource("BoxMesh_7ccnk")
+
+[node name="Foot3" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.2, 1)
+material_override = SubResource("StandardMaterial3D_k7qle")
+mesh = SubResource("BoxMesh_7ccnk")
+
+[node name="Foot4" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.2, 1)
+material_override = SubResource("StandardMaterial3D_k7qle")
+mesh = SubResource("BoxMesh_7ccnk")
+
+[node name="Head" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -2)
+material_override = SubResource("StandardMaterial3D_k7qle")
+mesh = SubResource("BoxMesh_fxfea")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("SphereShape3D_ihakg")
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -1.51)
+light_color = Color(1, 0, 0, 1)
+light_energy = 20.0
+spot_range = 11.0
+
+[node name="RayMid" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+target_position = Vector3(0, 0, -6)
+debug_shape_custom_color = Color(0, 0, 1, 1)
+debug_shape_thickness = 5
+
+[node name="Perception" type="Area3D" parent="."]
+
+[node name="BallPerception" type="CollisionShape3D" parent="Perception"]
+shape = SubResource("SphereShape3D_ugos2")
+
+[node name="BoxPerception" type="CollisionShape3D" parent="Perception"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -11)
+shape = SubResource("BoxShape3D_00245")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Perception"]
+visible = false
+material_override = SubResource("StandardMaterial3D_sa2xy")
+mesh = SubResource("SphereMesh_a1pqd")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Perception"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+visible = false
+material_override = SubResource("StandardMaterial3D_sa2xy")
+mesh = SubResource("BoxMesh_rmj8y")
+
+[node name="BeehaveTree" parent="." node_paths=PackedStringArray("blackboard", "actor") instance=ExtResource("3_iuo1d")]
+actor_node_path = NodePath("..")
+blackboard = NodePath("@Node@84323")
+actor = NodePath("..")

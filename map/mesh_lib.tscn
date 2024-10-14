@@ -1,29 +1,51 @@
-[gd_scene load_steps=4 format=3 uid="uid://d3j2gep3jk7u8"]
+[gd_scene load_steps=8 format=3 uid="uid://d3j2gep3jk7u8"]
+
+[ext_resource type="Material" uid="uid://cs56mcxgqbhc5" path="res://map/grass_mat.tres" id="1_yadam"]
+[ext_resource type="Material" uid="uid://cuqx46me7lsa8" path="res://map/stone_mat.tres" id="2_mtqj6"]
+[ext_resource type="Material" uid="uid://ccln4ydqredns" path="res://map/wood_mat.tres" id="3_mxdpp"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_dmxjm"]
+material = ExtResource("1_yadam")
 size = Vector3(4, 4, 4)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_gwect"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_xawtf"]
 size = Vector3(4, 4, 4)
 
-[sub_resource type="NavigationMesh" id="NavigationMesh_25pwr"]
-vertices = PackedVector3Array(-2, 2.5, -2, -2, 2.5, 2, 2, 2.5, 2, 2, 2.5, -2)
-polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
-agent_height = 0.0
-agent_radius = 0.0
+[sub_resource type="BoxMesh" id="BoxMesh_wjx3j"]
+material = ExtResource("2_mtqj6")
+size = Vector3(4, 4, 4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_5lt8e"]
+material = ExtResource("3_mxdpp")
+size = Vector3(4, 4, 4)
 
 [node name="MeshLib" type="Node3D"]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="Grass" type="MeshInstance3D" parent="."]
+material_override = ExtResource("1_yadam")
 mesh = SubResource("BoxMesh_dmxjm")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Grass"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
-shape = SubResource("BoxShape3D_gwect")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Grass/StaticBody3D"]
+shape = SubResource("BoxShape3D_xawtf")
 
-[node name="NavigationRegion3D" type="NavigationRegion3D" parent="MeshInstance3D"]
-navigation_mesh = SubResource("NavigationMesh_25pwr")
+[node name="Stone" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+material_override = ExtResource("2_mtqj6")
+mesh = SubResource("BoxMesh_wjx3j")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="MeshInstance3D/NavigationRegion3D"]
-mesh = SubResource("BoxMesh_dmxjm")
+[node name="StaticBody3D" type="StaticBody3D" parent="Stone"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stone/StaticBody3D"]
+shape = SubResource("BoxShape3D_xawtf")
+
+[node name="Wood" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 0)
+material_override = ExtResource("3_mxdpp")
+mesh = SubResource("BoxMesh_5lt8e")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Wood"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wood/StaticBody3D"]
+shape = SubResource("BoxShape3D_xawtf")

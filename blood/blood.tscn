@@ -1,0 +1,72 @@
+[gd_scene load_steps=5 format=3 uid="uid://c0duenjx73bfq"]
+
+[ext_resource type="Material" uid="uid://da08x2p5t233p" path="res://map/blood.tres" id="1_5avqn"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ugou2"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_31bmc"]
+size = Vector2(1, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_i81q3"]
+size = Vector2(0.5, 0.5)
+
+[node name="Blood" type="Node3D"]
+
+[node name="Bigsplatt" type="MeshInstance3D" parent="."]
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_ugou2")
+
+[node name="SmallSplatt" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 0.5)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_31bmc")
+
+[node name="SmallSplatt2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 1.5)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_31bmc")
+
+[node name="SmallSplatt3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0.5)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_31bmc")
+
+[node name="SmallSplatt4" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0, 1.25)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")
+
+[node name="SmallSplatt11" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0, 2.25)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")
+
+[node name="SmallSplatt5" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0, 1.25)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")
+
+[node name="SmallSplatt6" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 0, 1.25)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")
+
+[node name="SmallSplatt7" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 0, -0.75)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")
+
+[node name="SmallSplatt8" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0, -1.25)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")
+
+[node name="SmallSplatt9" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0, -0.25)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")
+
+[node name="SmallSplatt10" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0, -1.25)
+material_override = ExtResource("1_5avqn")
+mesh = SubResource("PlaneMesh_i81q3")

@@ -1,7 +1,6 @@
-[gd_scene load_steps=15 format=3 uid="uid://dup7qem7xyn0a"]
+[gd_scene load_steps=17 format=3 uid="uid://dup7qem7xyn0a"]
 
-[ext_resource type="Texture2D" uid="uid://b2cahf1gn0m3g" path="res://icon.svg" id="1_6uaea"]
-[ext_resource type="Script" path="res://test_ai/test_ai.gd" id="1_e3exb"]
+[ext_resource type="Script" path="res://test_ai/herd_animal.gd" id="1_e3exb"]
 [ext_resource type="PackedScene" uid="uid://blbt4f5slrg4k" path="res://test_ai/test_prey.tscn" id="3_c444i"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5cf33"]
@@ -35,14 +34,24 @@ size = Vector3(16, 3, 14)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_u72rt"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rfor0"]
-albedo_texture = ExtResource("1_6uaea")
-uv1_offset = Vector3(0.5, 0.5, 0.5)
-uv1_triplanar = true
-
 [sub_resource type="BoxMesh" id="BoxMesh_j51mt"]
+size = Vector3(1.2, 1, 1.8)
 
-[node name="TestAI" type="CharacterBody3D" groups=["herd_agent"]]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qrq4w"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1kpee"]
+size = Vector3(0.3, 0.3, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qmxp5"]
+albedo_color = Color(0, 0, 0, 1)
+uv1_scale = Vector3(2.5, 2.5, 2.5)
+uv1_offset = Vector3(0.5, 0.9, 0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_spihv"]
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="HerdAnimal" type="CharacterBody3D" groups=["herd_agent"]]
 script = ExtResource("1_e3exb")
 
 [node name="Debugball" type="MeshInstance3D" parent="."]
@@ -57,7 +66,7 @@ material_override = SubResource("StandardMaterial3D_iameu")
 mesh = SubResource("SphereMesh_mdkdr")
 
 [node name="RayMid" type="RayCast3D" parent="."]
-target_position = Vector3(0, 0, -4)
+target_position = Vector3(0, 0, -6)
 debug_shape_custom_color = Color(0, 0, 1, 1)
 debug_shape_thickness = 5
 
@@ -84,15 +93,12 @@ mesh = SubResource("BoxMesh_ecs0t")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_u72rt")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-material_override = SubResource("StandardMaterial3D_rfor0")
-mesh = SubResource("BoxMesh_j51mt")
-
 [node name="SpotLight3D" type="SpotLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.51)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 2.82524, -0.137542)
+visible = false
 light_color = Color(1, 0, 0, 1)
-light_energy = 10.0
-spot_range = 10.0
+light_energy = 50.0
+spot_range = 4.0
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5
@@ -100,5 +106,38 @@ target_desired_distance = 0.5
 path_max_distance = 1.01
 path_postprocessing = 1
 
-[node name="TestPrey" parent="." node_paths=PackedStringArray("blackboard") instance=ExtResource("3_c444i")]
-blackboard = NodePath("@Node@22854")
+[node name="TestPrey" parent="." node_paths=PackedStringArray("blackboard", "actor") groups=["herd_agent"] instance=ExtResource("3_c444i")]
+blackboard = NodePath("@Node@107328")
+actor = NodePath("..")
+
+[node name="model" type="Node3D" parent="."]
+
+[node name="Wool" type="MeshInstance3D" parent="model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("BoxMesh_j51mt")
+skeleton = NodePath("../..")
+
+[node name="leg" type="MeshInstance3D" parent="model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, -0.35, -0.5)
+material_override = SubResource("StandardMaterial3D_qrq4w")
+mesh = SubResource("BoxMesh_1kpee")
+
+[node name="leg2" type="MeshInstance3D" parent="model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, -0.35, -0.5)
+material_override = SubResource("StandardMaterial3D_qrq4w")
+mesh = SubResource("BoxMesh_1kpee")
+
+[node name="leg3" type="MeshInstance3D" parent="model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, -0.35, 0.5)
+material_override = SubResource("StandardMaterial3D_qrq4w")
+mesh = SubResource("BoxMesh_1kpee")
+
+[node name="leg4" type="MeshInstance3D" parent="model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, -0.35, 0.5)
+material_override = SubResource("StandardMaterial3D_qrq4w")
+mesh = SubResource("BoxMesh_1kpee")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -1)
+material_override = SubResource("StandardMaterial3D_qmxp5")
+mesh = SubResource("BoxMesh_spihv")

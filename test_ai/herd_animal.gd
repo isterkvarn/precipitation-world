@@ -7,7 +7,7 @@ const EATING = 3
 const FIND_HERD = 4
 const STOP = 5
 
-const SPEED = [2.0, 10.0, 4.0, 4.0, 4.0, 0.0]
+const SPEED = [2.0, 10.0, 6.0, 4.0, 4.0, 0.0]
 
 const MAX_HUNGER = 100
 const EAT_DISTANCE = 1.8
@@ -18,10 +18,10 @@ const HERD_COUNT_REQ = 5
 
 @onready var navigation = $NavigationAgent3D
 @onready var perception = $Perception
-
+@onready var wool = $model/Wool
 
 var state = ROAMING
-var hunger = MAX_HUNGER
+var hunger = MAX_HUNGER * randf_range(0.4, 1.0)
 var target_food
 
 
@@ -39,11 +39,15 @@ var time = 0
 var mesh
 var mesh2
 
+var wool_materials= {}
+
+@onready var blood_mesh = load("res://blood/blood.tscn")
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	velocity = Vector3(1, 0, 0)
 	
-	var ray_length = 4
+	var ray_length = 6
 	var ray_sep_ang = PI/8
 	
 	for i in range(1,8):
@@ -63,6 +67,13 @@ func _ready() -> void:
 		mesh2 = $MeshInstance3D.duplicate()
 		mesh2.position = Vector3(ray_length*cos(-PI/2 + i*ray_sep_ang), 0, ray_length*sin(-PI/2 + i*ray_sep_ang))
 		add_child(mesh2)"""
+		
+	wool_materials["blue"] = load("res://test_ai/wool_blue.tres")
+	wool_materials["red"] = load("res://test_ai/wool_red.tres")
+	wool_materials["yellow"] = load("res://test_ai/wool_yellow.tres")
+	wool_materials["green"] = load("res://test_ai/wool_green.tres")
+	wool_materials["purple"] = load("res://test_ai/wool_purple.tres")
+	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta: float) -> void:
 	
@@ -73,18 +84,23 @@ func _physics_process(delta: float) -> void:
 	match state:
 		ROAMING:
 			$SpotLight3D.light_color = Color.BLUE
+			wool.set_surface_override_material(0, wool_materials["blue"])
 			do_roaming(delta)
 		FLEEING:
 			$SpotLight3D.light_color = Color.RED
+			wool.set_surface_override_material(0, wool_materials["red"])
 			do_fleeing(delta)
 		FIND_FOOD:
 			$SpotLight3D.light_color = Color.YELLOW
+			wool.set_surface_override_material(0, wool_materials["yellow"])
 			find_food(delta)
 		EATING:
 			$SpotLight3D.light_color = Color.GREEN
+			wool.set_surface_override_material(0, wool_materials["green"])
 			do_eating(delta)
 		FIND_HERD:
 			$SpotLight3D.light_color = Color.PURPLE
+			wool.set_surface_override_material(0, wool_materials["purple"])
 			find_herd(delta)
 	
 	if (not global_position.is_equal_approx(global_position + 5*velocity)):
@@ -141,7 +157,7 @@ func do_roaming(delta) -> void:
 	var herd_members = get_percived_herd_members()
 	
 	if not herd_members.is_empty():
-		acceleration += calc_boid_forces(herd_members, [3, 15, 13], 0.5)
+		acceleration += calc_boid_forces(herd_members, [3, 12, 13], 0.5)
 	
 	acceleration.y = 0
 	
@@ -159,9 +175,10 @@ func do_roaming(delta) -> void:
 	
 	
 func is_heading_for_collsion(ignore_herd):
-	if mid_ray.is_colliding() and (not ignore_herd or mid_ray.get_collider().is_in_group("herd_agent")):
-		$Debugball.global_position = mid_ray.get_collision_point()
-		return true
+	if mid_ray.get_collider() != null:
+		if mid_ray.is_colliding() and (not ignore_herd or mid_ray.get_collider().is_in_group("herd_agent")):
+			$Debugball.global_position = mid_ray.get_collision_point()
+			return true
 	
 	for i in range(4):
 		if collision_rays[i].get_collider() != null:
@@ -223,12 +240,12 @@ func find_food(delta) -> void:
 	var acceleration = Vector3.ZERO
 	
 	if is_heading_for_collsion(false):
-		acceleration += calc_collision_force(false, 100)
+		acceleration += calc_collision_force(false, 300)
 	
 	var herd_members = get_percived_herd_members()
 	
 	if not herd_members.is_empty():
-		acceleration += calc_boid_forces(herd_members, [5, 8, 8], 0.5)
+		acceleration += calc_boid_forces(herd_members, [4, 7, 8], 0.5)
 	
 	acceleration.y = 0
 	
@@ -292,9 +309,16 @@ func calc_collision_force(ignore_herd, max_force) -> Vector3:
 	var count = 0
 		
 	for ray in collision_rays:
-		if not ray.is_colliding() or (ignore_herd and ray.get_collider().is_in_group("herd_agent")):
+		if not ray.is_colliding():
 			best_ray = ray
 			break
+		
+		var collider = ray.get_collider()
+		
+		if collider != null:
+			if (ignore_herd and collider.is_in_group("herd_agent")):
+				best_ray = ray
+				break
 		count += 1
 			
 				
@@ -358,7 +382,7 @@ func get_percived_herd_members():
 
 func check_danger() -> void:
 	for body in perception.get_overlapping_bodies():
-		if body.is_in_group("player"):
+		if body.is_in_group("player") or body.is_in_group("hunter"):
 			# Set to run away from players current position
 			give_scared(body.global_position)
 			
@@ -385,3 +409,9 @@ func do_scared_timer(delta) -> void:
 		#return
 			
 	scared_timer -= delta
+
+func get_eaten() -> void:
+	var blood_inst = blood_mesh.instantiate()
+	get_parent().add_child(blood_inst)
+	blood_inst.global_position = global_position - Vector3(0, 0.5, 0)
+	queue_free()

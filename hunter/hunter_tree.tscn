@@ -1,0 +1,32 @@
+[gd_scene load_steps=8 format=3 uid="uid://djlycbbr7gr60"]
+
+[ext_resource type="Script" path="res://addons/beehave/nodes/beehave_tree.gd" id="1_icgf1"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/selector_reactive.gd" id="2_v5m54"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/sequence.gd" id="3_aafix"]
+[ext_resource type="Script" path="res://test_ai/is_hungry.gd" id="4_r45rw"]
+[ext_resource type="Script" path="res://hunter/hunt.gd" id="5_51xlg"]
+[ext_resource type="Script" path="res://hunter/Chase.gd" id="6_u8fw6"]
+[ext_resource type="Script" path="res://test_ai/check_arrival.gd" id="12_b5e0q"]
+
+[node name="BeehaveTree" type="Node" node_paths=PackedStringArray("blackboard", "actor")]
+script = ExtResource("1_icgf1")
+blackboard = NodePath("@Node@17371")
+actor = NodePath("")
+
+[node name="SelectorReactiveComposite" type="Node" parent="."]
+script = ExtResource("2_v5m54")
+
+[node name="SequenceComposite3" type="Node" parent="SelectorReactiveComposite"]
+script = ExtResource("3_aafix")
+
+[node name="IsHungryCondition" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
+script = ExtResource("4_r45rw")
+
+[node name="Hunt" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
+script = ExtResource("5_51xlg")
+
+[node name="Chase" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
+script = ExtResource("6_u8fw6")
+
+[node name="Roam" type="Node" parent="SelectorReactiveComposite"]
+script = ExtResource("12_b5e0q")

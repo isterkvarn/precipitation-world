@@ -1,4 +1,4 @@
-class_name IshUNGRY extends ConditionLeaf
+class_name IsHungry extends ConditionLeaf
 
 func tick(actor:Node, _blackboard:Blackboard) -> int:
 	
