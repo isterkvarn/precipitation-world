@@ -405,6 +405,14 @@ func march_animation(coord: Vector3i) -> void:
 	
 	tock("time to animate chunk")
 
+func map(v: float, min: float, max: float, nmin: float, nmax: float):
+	return (v - min) * (nmax - nmin) / (max - min) + nmin
+
+# very unsure about what I am doing here
+func interp_weight(a, b):
+	return (threshold - b) / (a - b)
+	#return (e2 + (t - b) * (e1 - e2)  / (a - b));
+
 func march_chunk(coord: Vector3i, TRI) -> void:
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
@@ -442,8 +450,21 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 				for edge in TRI[idx]:
 					var p0 = POINTS[EDGES[edge].x] + Vector3i(x, y, z)
 					var p1 = POINTS[EDGES[edge].y] + Vector3i(x, y, z)
+					
+					var v0 = map(get_at(p0) - threshold, -1, threshold, 0, 1)
+					var v1 = map(get_at(p1) - threshold, -1, threshold, 0, 1)
+					
+					var sum = v0 + v1
+					var w0 = .5
+					var w1 = .5
+					if sum != 0:
+						w0 = v0 / sum
+						w1 = v1 / sum
+					
 					st.set_smooth_group(-1) # flat shading
-					st.add_vertex((p0 + p1) / 2.) # could do some linear interpolation here
+					#st.add_vertex((p0 + p1) / 2.) # could do some linear interpolation here
+					# interpolation breaks between the chunks :/
+					st.add_vertex((p0 * w0 + p1 * w1))
 
 	# Commit to a mesh.
 	st.generate_normals()
