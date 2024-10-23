@@ -3,9 +3,9 @@ class_name Chase extends ActionLeaf
 
 func tick(actor:Node, _blackboard:Blackboard) -> int:
 	
-	actor.state = actor.CHASING
+	actor.state = actor.HUNTING
 	
-	if actor.target_food == null:
+	if actor.target == null:
 		return FAILURE
 	
 	if actor.can_eat_target():

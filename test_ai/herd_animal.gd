@@ -106,6 +106,11 @@ func _physics_process(delta: float) -> void:
 	if (not global_position.is_equal_approx(global_position + 5*velocity)):
 		look_at(global_position + 5*velocity, Vector3.UP)
 		
+	var speed = get_speed()
+	
+	if velocity.length() == 0 and speed != 0:
+		velocity = Vector3.FORWARD.rotated(Vector3.UP, rotation.y)
+	
 	velocity = velocity.normalized() * get_speed()
 	
 	if not is_on_floor():

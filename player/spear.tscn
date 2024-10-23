@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3 uid="uid://dx3fdkr82vtjh"]
+
+[ext_resource type="Script" path="res://player/spear.gd" id="1_e0iy4"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ohips"]
+size = Vector3(0.1, 0.1, 3.76699)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nqsnu"]
+albedo_color = Color(0.321259, 0.263923, 0.183658, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0yo0a"]
+size = Vector3(0.1, 0.1, 4)
+
+[node name="Spear" type="Area3D"]
+script = ExtResource("1_e0iy4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.116504)
+shape = SubResource("BoxShape3D_ohips")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_nqsnu")
+mesh = SubResource("BoxMesh_0yo0a")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

@@ -70,7 +70,7 @@ func do_growth():
 	var query = PhysicsRayQueryParameters3D.create(global_position + Vector3(0.0, 0.25, 0.0), growth_position)
 	var result = space_state.intersect_ray(query)
 	
-	if result.position != growth_position:
+	if result.is_empty() or result.position != growth_position:
 		return
 	
 	# Make food at position

@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://b3j3gsv6hlime"]
+[gd_scene load_steps=14 format=3 uid="uid://b3j3gsv6hlime"]
 
 [ext_resource type="Script" path="res://hunter/hunter.gd" id="1_5lry2"]
 [ext_resource type="PackedScene" uid="uid://djlycbbr7gr60" path="res://hunter/hunter_tree.tscn" id="3_iuo1d"]
@@ -20,6 +20,9 @@ size = Vector3(0.5, 0.4, 0.5)
 [sub_resource type="SphereShape3D" id="SphereShape3D_ihakg"]
 radius = 1.0
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_6ebrj"]
+radius = 4.0
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_ugos2"]
 radius = 5.0
 
@@ -36,7 +39,7 @@ radius = 2.5
 height = 5.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_rmj8y"]
-size = Vector3(16, 3, 14)
+size = Vector3(10, 3, 22)
 
 [node name="Hunter" type="CharacterBody3D" groups=["hunter"]]
 script = ExtResource("1_5lry2")
@@ -90,6 +93,11 @@ target_position = Vector3(0, 0, -6)
 debug_shape_custom_color = Color(0, 0, 1, 1)
 debug_shape_thickness = 5
 
+[node name="Smell" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Smell"]
+shape = SubResource("SphereShape3D_6ebrj")
+
 [node name="Perception" type="Area3D" parent="."]
 
 [node name="BallPerception" type="CollisionShape3D" parent="Perception"]
@@ -105,12 +113,12 @@ material_override = SubResource("StandardMaterial3D_sa2xy")
 mesh = SubResource("SphereMesh_a1pqd")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Perception"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -11)
 visible = false
 material_override = SubResource("StandardMaterial3D_sa2xy")
 mesh = SubResource("BoxMesh_rmj8y")
 
 [node name="BeehaveTree" parent="." node_paths=PackedStringArray("blackboard", "actor") instance=ExtResource("3_iuo1d")]
 actor_node_path = NodePath("..")
-blackboard = NodePath("@Node@84323")
+blackboard = NodePath("@Node@142562")
 actor = NodePath("..")

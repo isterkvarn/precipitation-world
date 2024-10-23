@@ -1,32 +1,95 @@
-[gd_scene load_steps=8 format=3 uid="uid://djlycbbr7gr60"]
+[gd_scene load_steps=17 format=3 uid="uid://djlycbbr7gr60"]
 
 [ext_resource type="Script" path="res://addons/beehave/nodes/beehave_tree.gd" id="1_icgf1"]
 [ext_resource type="Script" path="res://addons/beehave/nodes/composites/selector_reactive.gd" id="2_v5m54"]
 [ext_resource type="Script" path="res://addons/beehave/nodes/composites/sequence.gd" id="3_aafix"]
-[ext_resource type="Script" path="res://test_ai/is_hungry.gd" id="4_r45rw"]
-[ext_resource type="Script" path="res://hunter/hunt.gd" id="5_51xlg"]
-[ext_resource type="Script" path="res://hunter/Chase.gd" id="6_u8fw6"]
-[ext_resource type="Script" path="res://test_ai/check_arrival.gd" id="12_b5e0q"]
+[ext_resource type="Script" path="res://hunter/is_threatened.gd" id="4_0yhls"]
+[ext_resource type="Script" path="res://hunter/should_fight.gd" id="5_n8mjk"]
+[ext_resource type="Script" path="res://hunter/fight.gd" id="6_60ly1"]
+[ext_resource type="Script" path="res://hunter/get_in_range.gd" id="6_gxdvk"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/decorators/time_limiter.gd" id="6_y0ldn"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/decorators/cooldown.gd" id="7_2nfa2"]
+[ext_resource type="Script" path="res://hunter/new_roam_direction.gd" id="7_46ua8"]
+[ext_resource type="Script" path="res://hunter/hunter_flee.gd" id="7_pu34l"]
+[ext_resource type="Script" path="res://hunter/ses_food_and_hungry.gd" id="7_pvve7"]
+[ext_resource type="Script" path="res://hunter/hunter_roam.gd" id="8_2c2so"]
+[ext_resource type="Script" path="res://hunter/Chase.gd" id="9_7s04e"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/decorators/delayer.gd" id="9_jtmhk"]
+[ext_resource type="Script" path="res://hunter/is_far_from_territory.gd" id="10_hue1g"]
 
-[node name="BeehaveTree" type="Node" node_paths=PackedStringArray("blackboard", "actor")]
+[node name="HunterTree" type="Node" node_paths=PackedStringArray("blackboard", "actor")]
 script = ExtResource("1_icgf1")
-blackboard = NodePath("@Node@17371")
+blackboard = NodePath("@Node@17393")
 actor = NodePath("")
 
 [node name="SelectorReactiveComposite" type="Node" parent="."]
 script = ExtResource("2_v5m54")
 
+[node name="SequenceComposite" type="Node" parent="SelectorReactiveComposite"]
+script = ExtResource("3_aafix")
+
+[node name="IsThreatened" type="Node" parent="SelectorReactiveComposite/SequenceComposite"]
+script = ExtResource("4_0yhls")
+
+[node name="TimeLimiterDecorator" type="Node" parent="SelectorReactiveComposite/SequenceComposite"]
+script = ExtResource("6_y0ldn")
+wait_time = 20.0
+
+[node name="SelectorReactiveComposite" type="Node" parent="SelectorReactiveComposite/SequenceComposite/TimeLimiterDecorator"]
+script = ExtResource("2_v5m54")
+
+[node name="SequenceComposite" type="Node" parent="SelectorReactiveComposite/SequenceComposite/TimeLimiterDecorator/SelectorReactiveComposite"]
+script = ExtResource("3_aafix")
+
+[node name="ShouldFight" type="Node" parent="SelectorReactiveComposite/SequenceComposite/TimeLimiterDecorator/SelectorReactiveComposite/SequenceComposite"]
+script = ExtResource("5_n8mjk")
+
+[node name="GetInRange" type="Node" parent="SelectorReactiveComposite/SequenceComposite/TimeLimiterDecorator/SelectorReactiveComposite/SequenceComposite"]
+script = ExtResource("6_gxdvk")
+
+[node name="DelayDecorator" type="Node" parent="SelectorReactiveComposite/SequenceComposite/TimeLimiterDecorator/SelectorReactiveComposite/SequenceComposite"]
+script = ExtResource("9_jtmhk")
+wait_time = 0.5
+
+[node name="Fight" type="Node" parent="SelectorReactiveComposite/SequenceComposite/TimeLimiterDecorator/SelectorReactiveComposite/SequenceComposite/DelayDecorator"]
+script = ExtResource("6_60ly1")
+
+[node name="Flee" type="Node" parent="SelectorReactiveComposite/SequenceComposite/TimeLimiterDecorator/SelectorReactiveComposite"]
+script = ExtResource("7_pu34l")
+
 [node name="SequenceComposite3" type="Node" parent="SelectorReactiveComposite"]
 script = ExtResource("3_aafix")
 
-[node name="IsHungryCondition" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
-script = ExtResource("4_r45rw")
+[node name="SesFoodAndHungry" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
+script = ExtResource("7_pvve7")
 
-[node name="Hunt" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
-script = ExtResource("5_51xlg")
+[node name="TimeLimiterDecorator" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
+script = ExtResource("6_y0ldn")
+wait_time = 12.0
 
-[node name="Chase" type="Node" parent="SelectorReactiveComposite/SequenceComposite3"]
-script = ExtResource("6_u8fw6")
+[node name="Hunt" type="Node" parent="SelectorReactiveComposite/SequenceComposite3/TimeLimiterDecorator"]
+script = ExtResource("9_7s04e")
 
-[node name="Roam" type="Node" parent="SelectorReactiveComposite"]
-script = ExtResource("12_b5e0q")
+[node name="SequenceComposite2" type="Node" parent="SelectorReactiveComposite"]
+script = ExtResource("3_aafix")
+
+[node name="CooldownDecorator" type="Node" parent="SelectorReactiveComposite/SequenceComposite2"]
+script = ExtResource("7_2nfa2")
+wait_time = 1.0
+
+[node name="NewRoamDirection" type="Node" parent="SelectorReactiveComposite/SequenceComposite2/CooldownDecorator"]
+script = ExtResource("7_46ua8")
+
+[node name="HunterRoam" type="Node" parent="SelectorReactiveComposite/SequenceComposite2"]
+script = ExtResource("8_2c2so")
+
+[node name="DelayDecorator" type="Node" parent="SelectorReactiveComposite/SequenceComposite2"]
+script = ExtResource("9_jtmhk")
+wait_time = 2.0
+
+[node name="TimeLimiterDecorator" type="Node" parent="SelectorReactiveComposite/SequenceComposite2/DelayDecorator"]
+script = ExtResource("6_y0ldn")
+wait_time = 60.0
+
+[node name="FarFromTerritory" type="Node" parent="SelectorReactiveComposite/SequenceComposite2/DelayDecorator/TimeLimiterDecorator"]
+script = ExtResource("10_hue1g")
