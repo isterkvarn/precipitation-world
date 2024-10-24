@@ -1,7 +1,8 @@
 extends CharacterBody3D
 
 
-const SPEED = 15.0
+const SPEED = 40.0
+const MAX_SPEED = 20
 const JUMP_VELOCITY = 4.5
 const MOUSE_SENSITIVITY = 0.003
 
@@ -12,8 +13,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	# Add the gravity.
-	#if not is_on_floor():
-		#velocity += get_gravity() * delta
+	if not is_on_floor():
+		velocity += get_gravity() * delta
 
 	# Handle jump.
 	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
@@ -25,15 +26,15 @@ func _physics_process(delta: float) -> void:
 	var up_down = Input.get_axis("down", "up")
 	var direction := (transform.basis * Vector3(input_dir.x, up_down, input_dir.y)).normalized()
 	if direction:
-		velocity = direction * SPEED
 		var fast = Input.is_action_pressed("speedup")
-		if fast:
-			velocity *= 5;
-	else:
-		velocity.x = move_toward(velocity.x, 0, SPEED)
-		velocity.y = move_toward(velocity.y, 0, SPEED)
-		velocity.z = move_toward(velocity.z, 0, SPEED)
+		velocity += direction * (int(fast) * 4 + 1) * SPEED * delta
 
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED*delta)
+		#velocity.y = move_toward(velocity.y, 0, SPEED*delta)
+		velocity.z = move_toward(velocity.z, 0, SPEED*delta)
+
+	velocity = velocity.limit_length(MAX_SPEED)
 	move_and_slide()
 	
 func _input(event):

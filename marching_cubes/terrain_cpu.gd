@@ -293,7 +293,7 @@ const EDGES := [
 const BLOCK_SIZE := 1.
 const BALL_RADIUS := BLOCK_SIZE / 8.
 const BALL_HEIGHT := 2 * BALL_RADIUS
-var noise := FastNoiseLite.new()
+var terrain_generator := TerrainGenerator.new()
 
 var loaded_mutex = Mutex.new()
 var loaded_chunks := {} # contains the currently shown chunks
@@ -301,7 +301,7 @@ var loaded_chunks := {} # contains the currently shown chunks
 var generated_mutex = Mutex.new()
 var generated_chunks := {} # contains meshes for already computed chunks
 
-@export var threshold := 0.3
+@export var threshold := 0.1
 
 var time := 0.
 
@@ -315,13 +315,12 @@ func tock(message: String = "ticktock time"):
 func march_meshInstance() -> MeshInstance3D:
 	var marched := MeshInstance3D.new()
 	marched.material_override = StandardMaterial3D.new()
-	marched.material_override.set_cull_mode(2) # CULL_DISABLED
+	marched.material_override.set_cull_mode(1)
 	marched.material_override.albedo_color = Color(1, 0.2, 0.2)
 	return marched
 
 func get_at(coord: Vector3i) -> float:
-	return noise.get_noise_3dv(coord)
-	#return chunk[x].get_pixel(y, z).r
+	return terrain_generator.get_at(coord)
 	
 func generate_balls(coord) -> void:
 	tick()
@@ -479,6 +478,14 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	
 	marched.position = coord * CHUNK_SIZE
 	marched.mesh = mesh
+	
+	# generate collison for mesh
+	marched.create_trimesh_collision()
+	# make sure collsision is detected on backside since collision orientation is wrong
+	# kinda ugly way to access collision shape but is works
+	if marched.get_child_count() > 0:
+		marched.get_child(0).get_child(0).shape.set_backface_collision_enabled(true)
+	
 	#add_child(marched) deffered because of threading
 	add_child.call_deferred(marched)
 	
@@ -494,7 +501,6 @@ func noop():
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	noise.frequency = 0.05
 	chunk_thread = Thread.new()
 	
 	var num_threads = RENDER_DISTANCE ** 3
@@ -529,6 +535,7 @@ func duplicate_2d(arr: Array):
 	ret.resize(len(arr))
 	for i in range(len(arr)):
 		ret[i] = arr[i].duplicate()
+		ret[i].reverse()
 	#tock("time to duplicate") # very small
 	return ret
 
