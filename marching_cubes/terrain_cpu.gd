@@ -288,8 +288,8 @@ const EDGES := [
 	Vector2i(3, 7),
 ]
 
-@export var CHUNK_SIZE := 30
-@export var RENDER_DISTANCE := 3 # in chunks
+@export var CHUNK_SIZE := 32
+@export var RENDER_DISTANCE := 4 # in chunks
 const BLOCK_SIZE := 1.
 const BALL_RADIUS := BLOCK_SIZE / 8.
 const BALL_HEIGHT := 2 * BALL_RADIUS
@@ -300,6 +300,14 @@ var loaded_chunks := {} # contains the currently shown chunks
 
 var generated_mutex = Mutex.new()
 var generated_chunks := {} # contains meshes for already computed chunks
+
+var rd : RenderingDevice
+var shader : RID
+var noise_buffer : RID
+var vertex_buffer : RID
+var counter_buffer : RID
+var buffer_set : RID
+var pipeline : RID
 
 @export var threshold := 0.1
 
@@ -315,12 +323,15 @@ func tock(message: String = "ticktock time"):
 func march_meshInstance() -> MeshInstance3D:
 	var marched := MeshInstance3D.new()
 	marched.material_override = StandardMaterial3D.new()
-	marched.material_override.set_cull_mode(1)
+	marched.material_override.set_cull_mode(0)
 	marched.material_override.albedo_color = Color(1, 0.2, 0.2)
 	return marched
 
 func get_at(coord: Vector3i) -> float:
 	return terrain_generator.get_at(coord)
+	
+func terrain_get_at(terrain, coord: Vector3i, size) -> float:
+	return terrain[coord.z + coord.y * size + coord.x * (size ** 2)]
 	
 func generate_balls(coord) -> void:
 	tick()
@@ -416,8 +427,10 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
+	var time = Time.get_ticks_usec()
 	
-	#var time = Time.get_ticks_usec()
+	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
+	var newtime3 := Time.get_ticks_usec()
 	
 	var marched = march_meshInstance()
 	var st := SurfaceTool.new()
@@ -426,7 +439,7 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	for x in range(CHUNK_SIZE):
 		for y in range(CHUNK_SIZE):
 			for z in range(CHUNK_SIZE):
-				var pos := Vector3i(x, y, z) + coord * CHUNK_SIZE
+				var pos := Vector3i(x, y, z) #+ coord * CHUNK_SIZE
 				var pos1 := pos + Vector3i(0, 0, 1)
 				var pos2 := pos + Vector3i(1, 0, 1)
 				var pos3 := pos + Vector3i(1, 0, 0)
@@ -437,21 +450,21 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 				
 				# get triangulation index from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 				var idx = 0b00000000
-				idx |= int(get_at(pos) < threshold) << 0
-				idx |= int(get_at(pos1) < threshold) << 1
-				idx |= int(get_at(pos2) < threshold) << 2
-				idx |= int(get_at(pos3) < threshold) << 3
-				idx |= int(get_at(pos4) < threshold) << 4
-				idx |= int(get_at(pos5) < threshold) << 5
-				idx |= int(get_at(pos6) < threshold) << 6
-				idx |= int(get_at(pos7) < threshold) << 7
+				idx |= int(terrain_get_at(terrain_noise, pos, CHUNK_SIZE+1) < threshold) << 0
+				idx |= int(terrain_get_at(terrain_noise, pos1, CHUNK_SIZE+1) < threshold) << 1
+				idx |= int(terrain_get_at(terrain_noise, pos2, CHUNK_SIZE+1) < threshold) << 2
+				idx |= int(terrain_get_at(terrain_noise, pos3, CHUNK_SIZE+1) < threshold) << 3
+				idx |= int(terrain_get_at(terrain_noise, pos4, CHUNK_SIZE+1) < threshold) << 4
+				idx |= int(terrain_get_at(terrain_noise, pos5, CHUNK_SIZE+1) < threshold) << 5
+				idx |= int(terrain_get_at(terrain_noise, pos6, CHUNK_SIZE+1) < threshold) << 6
+				idx |= int(terrain_get_at(terrain_noise, pos7, CHUNK_SIZE+1) < threshold) << 7
 				
 				for edge in TRI[idx]:
 					var p0 = POINTS[EDGES[edge].x] + Vector3i(x, y, z)
 					var p1 = POINTS[EDGES[edge].y] + Vector3i(x, y, z)
 					
-					var v0 = map(get_at(p0) - threshold, -1, threshold, 0, 1)
-					var v1 = map(get_at(p1) - threshold, -1, threshold, 0, 1)
+					var v0 = map(terrain_get_at(terrain_noise, p0, CHUNK_SIZE+1) - threshold, -1, threshold, 0, 1)
+					var v1 = map(terrain_get_at(terrain_noise, p1, CHUNK_SIZE+1) - threshold, -1, threshold, 0, 1)
 					
 					var sum = v0 + v1
 					var w0 = .5
@@ -460,11 +473,12 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 						w0 = v0 / sum
 						w1 = v1 / sum
 					
-					st.set_smooth_group(-1) # flat shading
+					st.set_smooth_group(0) # smooth shading
 					#st.add_vertex((p0 + p1) / 2.) # could do some linear interpolation here
 					# interpolation breaks between the chunks :/
 					st.add_vertex((p0 * w0 + p1 * w1))
 
+	var newtime1 := Time.get_ticks_usec()
 	# Commit to a mesh.
 	st.generate_normals()
 	# hits generation performance and i couldn't measure any performance difference
@@ -480,17 +494,157 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	marched.mesh = mesh
 	
 	# generate collison for mesh
-	marched.create_trimesh_collision()
+	if mesh.get_surface_count() > 0:
+		marched.create_trimesh_collision()
 	# make sure collsision is detected on backside since collision orientation is wrong
 	# kinda ugly way to access collision shape but is works
 	if marched.get_child_count() > 0:
-		marched.get_child(0).get_child(0).shape.set_backface_collision_enabled(true)
+		marched.get_node("_col").get_node("CollisionShape3D").shape.set_backface_collision_enabled(true)
 	
 	#add_child(marched) deffered because of threading
 	add_child.call_deferred(marched)
 	
-	#var newtime := Time.get_ticks_usec()
-	#print("time to generate chunk: ", (newtime - time) / 1000000.0)
+	var newtime2 := Time.get_ticks_usec()
+	print("time to generate terrain: ", (newtime3 - time) / 1000000.0)
+	print("time to generate vertex: ", (newtime1 - newtime3) / 1000000.0)
+	print("time to generate collision: ", (newtime2 - newtime1) / 1000000.0)
+	
+	
+func march_gpu_init() -> void:
+	# Create a local rendering device for compute shaders
+	rd = RenderingServer.create_local_rendering_device()
+	
+	# Load GLSL shader
+	var shader_file := load("res://shaders/cube_march.glsl")
+	var shader_spirv: RDShaderSPIRV = shader_file.get_spirv()
+	shader = rd.shader_create_from_spirv(shader_spirv)
+	
+	# Create buffer for noise
+	noise_buffer = rd.storage_buffer_create(32*(CHUNK_SIZE+1)**3)
+	var n_uniform := RDUniform.new()
+	n_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	n_uniform.binding = 0 # this needs to match the "binding" in our shader file
+	n_uniform.add_id(noise_buffer)
+	
+	# Create buffer for counter
+	var counter = [0]
+	var counter_bytes = PackedInt32Array(counter).to_byte_array()
+	counter_buffer = rd.storage_buffer_create(counter_bytes.size(), counter_bytes)
+	var c_uniform = RDUniform.new()
+	c_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	c_uniform.binding = 1
+	c_uniform.add_id(counter_buffer)
+	
+	# Create buffer from output vertices
+	vertex_buffer = rd.storage_buffer_create(16*32*(CHUNK_SIZE**3))
+	var v_uniform := RDUniform.new()
+	v_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	v_uniform.binding = 2 # this needs to match the "binding" in our shader file
+	v_uniform.add_id(vertex_buffer)
+	
+	var buffers = [n_uniform, c_uniform, v_uniform]
+	buffer_set = rd.uniform_set_create(buffers, shader, 0)
+	pipeline = rd.compute_pipeline_create(shader)
+	print(buffer_set)
+	print("done init for shader")
+
+
+func march_chunk_gpu(coord: Vector3i, TRI) -> void:
+	loaded_mutex.lock()
+	loaded_chunks[coord] = 1.
+	loaded_mutex.unlock()
+	
+	var time = Time.get_ticks_usec()
+	
+	# Update with chunk noise
+	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
+	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
+	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
+	
+	# Reset counter
+	var counter = [0]
+	var counter_bytes = PackedFloat32Array(counter).to_byte_array()
+	rd.buffer_update(counter_buffer, 0 ,counter_bytes.size(), counter_bytes)
+	
+	# Clear output buffer
+	rd.buffer_clear(vertex_buffer, 16*32*(CHUNK_SIZE**3), 0)
+	
+	var compute_list = rd.compute_list_begin()
+	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
+	rd.compute_list_bind_uniform_set(compute_list, buffer_set, 0)
+	rd.compute_list_dispatch(compute_list, 4, 4, 4)
+	rd.compute_list_end()
+	
+	# GENERATE VERTEIES ON GPU
+	rd.submit()
+	rd.sync()
+	
+	var newtime1 := Time.get_ticks_usec()
+	
+	var ver_bytes = rd.buffer_get_data(vertex_buffer)
+	var vertex_output = ver_bytes.to_float32_array()
+	
+	counter_bytes = rd.buffer_get_data(counter_buffer)
+	var count_output = counter_bytes.to_int32_array()
+	
+	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
+	
+	var marched = march_meshInstance()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	
+	#for i in range(8):
+		#print(vertex_output[i])
+	#print(count_output)
+
+	# ADD ALL VERTECIES TO st
+	for ver_index in range(0, count_output[0], 9):
+		var vertex1 = Vector3(vertex_output[ver_index], 
+							  vertex_output[ver_index+1],
+							  vertex_output[ver_index+2])
+		var vertex2 = Vector3(vertex_output[ver_index+3], 
+							  vertex_output[ver_index+4],
+							  vertex_output[ver_index+5])
+		var vertex3 = Vector3(vertex_output[ver_index+6], 
+							  vertex_output[ver_index+7],
+							  vertex_output[ver_index+8])
+		
+		if vertex1.distance_to(vertex2) > 2.0 or vertex1.distance_to(vertex3) > 2.0 or vertex2.distance_to(vertex3) > 2.0:
+			print("polygon :", vertex1, ", ", vertex2, ", ", vertex3)
+		st.add_vertex(vertex1)
+		st.add_vertex(vertex2)
+		st.add_vertex(vertex3)
+	
+	var newtime2 := Time.get_ticks_usec()
+	# Commit to a mesh.
+	st.generate_normals()
+	# hits generation performance and i couldn't measure any performance difference
+	#st.index()
+	#st.optimize_indices_for_cache()
+	var mesh := st.commit()
+	
+	generated_mutex.lock()
+	generated_chunks[coord] = mesh
+	generated_mutex.unlock()
+	
+	marched.position = coord * CHUNK_SIZE
+	marched.mesh = mesh
+	
+	# generate collison for mesh
+	if mesh.get_surface_count() > 0:
+		marched.create_trimesh_collision()
+	# make sure collsision is detected on backside since collision orientation is wrong
+	# kinda ugly way to access collision shape but is works
+	if marched.get_child_count() > 0:
+		marched.get_node("_col").get_node("CollisionShape3D").shape.set_backface_collision_enabled(true)
+	
+	#add_child(marched) deffered because of threading
+	add_child.call_deferred(marched)
+	
+	var newtime3 := Time.get_ticks_usec()
+	print("time to generate vertex gpu: ", (newtime1 - time) / 1000000.0)
+	print("time to generate mesh cpu: ", (newtime2 - newtime1) / 1000000.0)
+	print("Total time ", (newtime3 - time) / 1000000.0)
 
 var chunk_thread: Thread
 
@@ -502,8 +656,9 @@ func noop():
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	chunk_thread = Thread.new()
+	march_gpu_init()
 	
-	var num_threads = RENDER_DISTANCE ** 3
+	var num_threads = 1 #RENDER_DISTANCE ** 4
 	# for some reason if this is 3, then 500% (5 cores) of the cpu is used
 	var num_cores = OS.get_processor_count() / 2 - 3
 	if (num_threads > num_cores):
@@ -559,7 +714,7 @@ func show_chunk(coord: Vector3i) -> void:
 			load_chunk(coord) # never used lol
 		else:
 			var thread := get_worker_thread()
-			thread.start(march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS)))
+			thread.start(march_chunk_gpu.bind(coord, duplicate_2d(TRIANGULATIONS)))
 
 func show_chunks_around_player(player_chunk: Vector3i) -> void:
 	for x in range(RENDER_DISTANCE):
