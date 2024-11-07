@@ -296,8 +296,15 @@ layout(set = 0, binding = 2, std430) restrict buffer VertexFloatBuffer {
 }
 vertex_buffer;
 
-const int size = 32;
-float threshold = 0.1;
+layout(set = 0, binding = 3, std430) coherent buffer Size
+{
+	int size;
+};
+
+layout(set = 0, binding = 4, std430) coherent buffer Threshold 
+{
+	float threshold;
+};
 
 float getAt(vec3 pos) {
     int size_pad = size + 1;

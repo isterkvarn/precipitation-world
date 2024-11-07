@@ -290,9 +290,11 @@ const EDGES := [
 
 @export var CHUNK_SIZE := 32
 @export var RENDER_DISTANCE := 4 # in chunks
+
 const BLOCK_SIZE := 1.
 const BALL_RADIUS := BLOCK_SIZE / 8.
 const BALL_HEIGHT := 2 * BALL_RADIUS
+
 var terrain_generator := TerrainGenerator.new()
 
 var loaded_mutex = Mutex.new()
@@ -307,6 +309,8 @@ var noise_buffer : RID
 var vertex_buffer : RID
 var counter_buffer : RID
 var buffer_set : RID
+var size_buffer : RID
+var threshold_buffer : RID
 var pipeline : RID
 
 @export var threshold := 0.1
@@ -542,7 +546,25 @@ func march_gpu_init() -> void:
 	v_uniform.binding = 2 # this needs to match the "binding" in our shader file
 	v_uniform.add_id(vertex_buffer)
 	
-	var buffers = [n_uniform, c_uniform, v_uniform]
+	# create buffer for chunk size
+	var chunk_size = [CHUNK_SIZE]
+	var size_bytes = PackedInt32Array(chunk_size).to_byte_array()
+	size_buffer = rd.storage_buffer_create(size_bytes.size(), size_bytes)
+	var size_uniform = RDUniform.new()
+	size_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	size_uniform.binding = 3
+	size_uniform.add_id(size_buffer)
+	
+	# create buffer for threshold
+	var threshold_array = [threshold]
+	var threshold_bytes = PackedFloat32Array(threshold_array).to_byte_array()
+	threshold_buffer = rd.storage_buffer_create(size_bytes.size(), size_bytes)
+	var threshold_uniform = RDUniform.new()
+	threshold_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	threshold_uniform.binding = 4
+	threshold_uniform.add_id(threshold_buffer)
+	
+	var buffers = [n_uniform, c_uniform, v_uniform, size_uniform, threshold_uniform]
 	buffer_set = rd.uniform_set_create(buffers, shader, 0)
 	pipeline = rd.compute_pipeline_create(shader)
 	print(buffer_set)
