@@ -289,7 +289,7 @@ const EDGES := [
 ]
 
 @export var CHUNK_SIZE := 32
-@export var RENDER_DISTANCE := 4 # in chunks
+@export var RENDER_DISTANCE := 5 # in chunks
 
 const BLOCK_SIZE := 1.
 const BALL_RADIUS := BLOCK_SIZE / 8.
@@ -739,11 +739,21 @@ func show_chunk(coord: Vector3i) -> void:
 			thread.start(march_chunk_gpu.bind(coord, duplicate_2d(TRIANGULATIONS)))
 
 func show_chunks_around_player(player_chunk: Vector3i) -> void:
-	for x in range(RENDER_DISTANCE):
-		for y in range(RENDER_DISTANCE):
-			for z in range(RENDER_DISTANCE):
-					var chunk_coord := player_chunk + Vector3i(x, y, z) - Vector3i(RENDER_DISTANCE / 2, RENDER_DISTANCE / 2, RENDER_DISTANCE / 2)
-					show_chunk(chunk_coord)
+	#Gör så att vi utgår från player position och rör oss utåt.
+	var max_offset = floor(RENDER_DISTANCE/2)
+	for offset in range(0, max_offset + 1):
+		for dx in range(-offset, offset+1):
+			for dy in range(-offset, offset+1):
+				for dz in range(-offset, offset+1):
+					if abs(dx) == offset or abs(dy) == offset or abs(dz) == offset:
+						#var x = max_offset + dx 
+						#var y = max_offset + dy
+						#var z = max_offset + dz
+						#var chunk_coord := player_chunk + Vector3i(dx, dy, dz) - Vector3i(RENDER_DISTANCE / 2, RENDER_DISTANCE / 2, RENDER_DISTANCE / 2)
+						var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
+						print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
+						show_chunk(chunk_coord)
+
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
