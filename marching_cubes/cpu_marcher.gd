@@ -57,7 +57,7 @@ func map(v: float, min: float, max: float, nmin: float, nmax: float):
 
 
 # slow but cool
-func march_animation(coord: Vector3i) -> void:
+func march_animation(coord: Vector3i, TRI) -> void:
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
@@ -101,7 +101,7 @@ func march_animation(coord: Vector3i) -> void:
 				idx |= int(get_at(pos6) < threshold) << 6
 				idx |= int(get_at(pos7) < threshold) << 7
 				
-				for edge in TRIANGULATIONS[idx]:
+				for edge in TRI[idx]:
 					var p0 = POINTS[EDGES[edge].x] + pos
 					var p1 = POINTS[EDGES[edge].y] + pos
 					st.set_smooth_group(-1) # flat shading
