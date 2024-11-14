@@ -365,7 +365,7 @@ void main() {
         //vec3 p2 = cornerOffsets[e10] + pos;
         //vec3 p3 = cornerOffsets[e20] + pos;
 
-        uint idx = atomicAdd(counter, 9);
+        uint idx = int(int(pos.z) + int(pos.y) * size + int(pos.x) * size * size)*45 + i*3;
 
         vertex_buffer.data[idx] = p1.x;
         vertex_buffer.data[idx+1] = p1.y;

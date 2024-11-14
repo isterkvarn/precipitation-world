@@ -4,3 +4,4 @@
 
 [node name="Terrain" type="Node3D"]
 script = ExtResource("1_v3cmg")
+RENDER_DISTANCE = 3
