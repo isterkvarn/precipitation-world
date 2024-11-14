@@ -117,10 +117,13 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	var marched = march_meshInstance()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_smooth_group(-1) # flat shading
 	
 	#for i in range(8):
 		#print(vertex_output[i])
 	#print(count_output)
+	
+	var world_pos = coord * CHUNK_SIZE
 
 	# ADD ALL VERTECIES TO st
 	for ver_index in range(0, vertex_output.size(), 9):
@@ -140,8 +143,15 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 		
 		if vertex1.distance_to(vertex2) > 2.0 or vertex1.distance_to(vertex3) > 2.0 or vertex2.distance_to(vertex3) > 2.0:
 			print("polygon :", vertex1, ", ", vertex2, ", ", vertex3)
+
+		var color1 = terrain_generator.color_at(vertex1 + Vector3(world_pos))
+		var color2 = terrain_generator.color_at(vertex2 + Vector3(world_pos))
+		var color3 = terrain_generator.color_at(vertex3 + Vector3(world_pos))
+		st.set_color(color1)
 		st.add_vertex(vertex1)
+		st.set_color(color2)
 		st.add_vertex(vertex2)
+		st.set_color(color3)
 		st.add_vertex(vertex3)
 	
 	var newtime2 := Time.get_ticks_usec()

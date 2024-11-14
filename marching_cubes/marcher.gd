@@ -8,7 +8,7 @@ const BALL_HEIGHT := 2 * BALL_RADIUS
 var CHUNK_SIZE: int
 var threshold: int
 
-var terrain_generator := TerrainGenerator.new()
+var terrain_generator : TerrainGenerator
 
 var loaded_mutex = Mutex.new()
 var loaded_chunks := {} # contains the currently shown chunks
@@ -20,6 +20,7 @@ func _init(s, chunk_size, thrshold):
 	scene = s
 	CHUNK_SIZE = chunk_size
 	threshold = thrshold
+	terrain_generator = TerrainGenerator.new(thrshold)
 
 func terrain_get_at(terrain, coord: Vector3i, size) -> float:
 	return terrain[coord.z + coord.y * size + coord.x * (size ** 2)]
@@ -30,8 +31,10 @@ func get_at(coord: Vector3i) -> float:
 func march_meshInstance() -> MeshInstance3D:
 	var marched := MeshInstance3D.new()
 	marched.material_override = StandardMaterial3D.new()
-	marched.material_override.set_cull_mode(0)
-	marched.material_override.albedo_color = Color(1, 0.2, 0.2)
+	#marched.material_override.set_cull_mode(0)
+	marched.material_override.vertex_color_use_as_albedo = true
+	#marched.material_override.shading_mode = 2 # shading per vertex
+	#marched.material_override.albedo_color = Color(1, 0.2, 0.2)
 	return marched
 
 func init() -> void:

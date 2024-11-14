@@ -122,12 +122,14 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	loaded_mutex.unlock()
 	var time = Time.get_ticks_usec()
 	
-	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
+	var world_pos = coord*CHUNK_SIZE
+	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, world_pos)
 	var newtime3 := Time.get_ticks_usec()
 	
 	var marched = march_meshInstance()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_smooth_group(-1) # flat shading
 	
 	for x in range(CHUNK_SIZE):
 		for y in range(CHUNK_SIZE):
@@ -166,10 +168,12 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 						w0 = v0 / sum
 						w1 = v1 / sum
 					
-					st.set_smooth_group(0) # smooth shading
-					#st.add_vertex((p0 + p1) / 2.) # could do some linear interpolation here
+					var vert_pos = (p0 + p1) / 2.
+					var color = terrain_generator.color_at(vert_pos + Vector3(world_pos))
+					st.set_color(color)
+					st.add_vertex(vert_pos) # could do some linear interpolation here
 					# interpolation breaks between the chunks :/
-					st.add_vertex((p0 * w0 + p1 * w1))
+					#st.add_vertex((p0 * w0 + p1 * w1))
 
 	var newtime1 := Time.get_ticks_usec()
 	# Commit to a mesh.
