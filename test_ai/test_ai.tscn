@@ -101,5 +101,5 @@ path_max_distance = 1.01
 path_postprocessing = 1
 
 [node name="TestPrey" parent="." node_paths=PackedStringArray("blackboard", "actor") instance=ExtResource("3_c444i")]
-blackboard = NodePath("@Node@17276")
+blackboard = NodePath("@Node@17265")
 actor = NodePath("..")
