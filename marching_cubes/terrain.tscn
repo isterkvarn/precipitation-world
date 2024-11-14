@@ -1,6 +1,9 @@
 [gd_scene load_steps=2 format=3 uid="uid://butfi15jwpi8p"]
 
-[ext_resource type="Script" path="res://marching_cubes/terrain_cpu.gd" id="1_v3cmg"]
+[ext_resource type="Script" path="res://marching_cubes/terrain.gd" id="1_v3cmg"]
 
 [node name="Terrain" type="Node3D"]
 script = ExtResource("1_v3cmg")
+CHUNK_SIZE = null
+RENDER_DISTANCE = null
+threshold = null
