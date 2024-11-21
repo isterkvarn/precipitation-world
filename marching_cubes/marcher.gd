@@ -40,5 +40,5 @@ func march_meshInstance() -> MeshInstance3D:
 func init() -> void:
 	print("init should never be called but be implemented by the extending class")
 
-func march_chunk(coord: Vector3i, TRI) -> void:
+func march_chunk(_coord: Vector3i, _TRI) -> void:
 	print("march_chunk should never be called but be implemented by the extending class")

@@ -74,7 +74,7 @@ func init() -> void:
 	print("done init for shader")
 
 
-func march_chunk(coord: Vector3i, TRI) -> void:
+func march_chunk(coord: Vector3i, _TRI) -> void:
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()

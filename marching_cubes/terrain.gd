@@ -4,7 +4,7 @@ extends Node3D
 @export var RENDER_DISTANCE := 4 # in chunks
 @export var threshold := 0.1
 
-var marcher: Marcher = CpuMarcher.new(self, CHUNK_SIZE, threshold)
+var marcher: Marcher = GpuMarcher.new(self, CHUNK_SIZE, threshold)
 
 var chunk_thread: Thread
 

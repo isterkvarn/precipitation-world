@@ -7,6 +7,8 @@ var noise_boulder := FastNoiseLite.new()
 @export var GROUND_COLOR := Vector3(0,1,0)
 @export var CAVE_COLOR := Vector3(1,0,0)
 @export var BOULDER_COLOR := Vector3(0,0,1)
+@export var SNOW_COLOR := Vector3(1,1,1)
+@export var HIGH := 40
 
 var threshold
 
@@ -41,12 +43,18 @@ func color_at(coord) -> Color:
 	
 	color += 5 * max(noise_caves.get_noise_3dv(coord), 0.0) * CAVE_COLOR
 	
-	var ground = clampf(coord.y + 140 * noise_ground.get_noise_2dv(Vector2i(coord.x, coord.z)), -1.0, 1.0)
-	color += (ground + 1)/2 * GROUND_COLOR
+	var ground = clampf(coord.y - 1 + 140 * noise_ground.get_noise_2dv(Vector2i(coord.x, coord.z)), -1.0, 1.0)
+	var ground_over = clampf(coord.y + 1 + 140 * noise_ground.get_noise_2dv(Vector2i(coord.x, coord.z)), -1.0, 1.0)
+	if ground < threshold and ground_over >= threshold:
+		#color += GROUND_COLOR * ground
+		color += GROUND_COLOR * ((HIGH - coord.y) / 40)
+		if coord.y >= HIGH:
+			color += SNOW_COLOR * ((coord.y - HIGH)  / 10)
+	#color += max(-ground, -threshold) * GROUND_COLOR
 	
 	if ground > threshold:
 		var boulder = clampf(5 - 0.5 * coord.y, -1.0, 5.0) * noise_boulder.get_noise_3dv(coord)
-		#color += max(boulder, 0) * BOULDER_COLOR
+		color += max(-boulder, 0) * BOULDER_COLOR
 	#color = color.normalized()
 	
 	#print(color)

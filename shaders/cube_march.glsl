@@ -357,13 +357,13 @@ void main() {
         int e20 = edgeConnections[edges[i + 2]][0];
         int e21 = edgeConnections[edges[i + 2]][1];
 
-        vec3 p1 = interp(cornerOffsets[e00], noiseResult[e00], cornerOffsets[e01], noiseResult[e01]) + pos;
-        vec3 p2 = interp(cornerOffsets[e10], noiseResult[e10], cornerOffsets[e11], noiseResult[e11]) + pos;
-        vec3 p3 = interp(cornerOffsets[e20], noiseResult[e20], cornerOffsets[e21], noiseResult[e21]) + pos;
+        // vec3 p1 = interp(cornerOffsets[e00], noiseResult[e00], cornerOffsets[e01], noiseResult[e01]) + pos;
+        // vec3 p2 = interp(cornerOffsets[e10], noiseResult[e10], cornerOffsets[e11], noiseResult[e11]) + pos;
+        // vec3 p3 = interp(cornerOffsets[e20], noiseResult[e20], cornerOffsets[e21], noiseResult[e21]) + pos;
 
-        //vec3 p1 = cornerOffsets[e00] + pos;
-        //vec3 p2 = cornerOffsets[e10] + pos;
-        //vec3 p3 = cornerOffsets[e20] + pos;
+        vec3 p1 = (cornerOffsets[e00] + cornerOffsets[e01]) / 2 + pos;
+        vec3 p2 = (cornerOffsets[e10] + cornerOffsets[e11]) / 2 + pos;
+        vec3 p3 = (cornerOffsets[e20] + cornerOffsets[e21]) / 2 + pos;
 
         uint idx = int(int(pos.z) + int(pos.y) * size + int(pos.x) * size * size)*45 + i*3;
 
