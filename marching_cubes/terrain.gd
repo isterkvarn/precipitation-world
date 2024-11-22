@@ -62,7 +62,9 @@ func show_chunks_around_player(player_chunk: Vector3i) -> void:
 	for offset in range(0, max_offset + 1):
 		for dx in range(-offset, offset+1):
 			for dz in range(-offset, offset+1):
-				for dy in range(-offset+1, offset):
+				for dy in range(-offset, offset+1):
+					if dy == max_offset:
+						continue
 					var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
 					print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
 					show_chunk(chunk_coord)
