@@ -1,6 +1,7 @@
 class_name GpuMarcher extends Marcher
 
 var rd : RenderingDevice
+var rd_mutex := Mutex.new()
 var shader : RID
 var noise_buffer : RID
 var vertex_buffer : RID
@@ -14,6 +15,7 @@ var dead_beef_arr = PackedFloat32Array()
 
 func init() -> void:
 	# Create a local rendering device for compute shaders
+	rd_mutex.lock()
 	rd = RenderingServer.create_local_rendering_device()
 	
 	# Load GLSL shader
@@ -70,20 +72,22 @@ func init() -> void:
 	var buffers = [n_uniform, c_uniform, v_uniform, size_uniform, threshold_uniform]
 	buffer_set = rd.uniform_set_create(buffers, shader, 0)
 	pipeline = rd.compute_pipeline_create(shader)
+	rd_mutex.unlock()
 	print(buffer_set)
 	print("done init for shader")
 
 
 func march_chunk(coord: Vector3i, TRI) -> void:
+	var time = Time.get_ticks_usec()
+	
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
 	
-	var time = Time.get_ticks_usec()
-	
 	# Update with chunk noise
 	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
 	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
+	rd_mutex.lock()
 	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
 	
 	var newtime1 := Time.get_ticks_usec()
@@ -112,6 +116,7 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	var vertex_output = ver_bytes.to_float32_array()
 	
 	counter_bytes = rd.buffer_get_data(counter_buffer)
+	rd_mutex.unlock()
 	var count_output = counter_bytes.to_int32_array()
 	
 	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
@@ -168,7 +173,8 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	scene.add_child.call_deferred(marched)
 	
 	var end := Time.get_ticks_usec()
-	print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
-	print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
-	print("time to generate mesh cpu: ", (end - newtime2) / 1000000.0)
-	print("Total time ", (end - time) / 1000000.0)
+	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
+	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
+	#print("time to generate mesh cpu: ", (end - newtime2) / 1000000.0)
+	#print("Total time ", (end - time) / 1000000.0)
+	

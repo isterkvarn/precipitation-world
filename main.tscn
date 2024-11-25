@@ -36,6 +36,12 @@ script = ExtResource("3_wkp1t")
 RENDER_DISTANCE = 8
 VERTICAL_RENDER_DISTANCE = 4
 
+[node name="chunk_time" type="Label" parent="Terrain"]
+offset_top = 20.0
+offset_right = 197.0
+offset_bottom = 43.0
+text = "Time for chunk rendering"
+
 [node name="fps_counter" type="Label" parent="."]
 offset_right = 40.0
 offset_bottom = 23.0

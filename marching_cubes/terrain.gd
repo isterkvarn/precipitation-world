@@ -22,7 +22,7 @@ func _ready() -> void:
 	var num_threads = 1 #RENDER_DISTANCE ** 4
 	# for some reason if this is 3, then 500% (5 cores) of the cpu is used
 	var num_cores = OS.get_processor_count() / 2 - 3
-	if (num_threads > num_cores):
+	if (num_cores > num_threads):
 		num_threads = num_cores
 	
 	print("using ", num_threads, " threads ")
@@ -50,11 +50,16 @@ func get_worker_thread() -> Thread:
 				return worker
 	return null# just so that the compiler is happy about all paths returning
 
+@onready var chunk_time_label := $chunk_time
+
 func show_chunk(coord: Vector3i) -> void:
 	var thread := get_worker_thread()
 	if thread == null:
 		return
+	var start := Time.get_ticks_usec()
 	thread.start(marcher.march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS)))
+	var end := Time.get_ticks_usec()
+	chunk_time_label.set_text.call_deferred("chunk generation time: " + str((end - start) / 1000000.0))
 
 # returns the indicies of a cube around the player
 func get_cube_index(radius: int, vertical_radius: int):
@@ -67,11 +72,11 @@ func get_cube_index(radius: int, vertical_radius: int):
 			indexes.append(Vector3i(x, height, radius))
 	# side 2
 	for height in range(-vertical_radius, vertical_radius + 1):
-		for x in range(-radius, radius):
+		for x in range(-radius + 1, radius + 1):
 			indexes.append(Vector3i(x, height, -radius))
 	# side 3
 	for height in range(-vertical_radius, vertical_radius + 1):
-		for z in range(-radius, radius):
+		for z in range(-radius + 1, radius + 1):
 			indexes.append(Vector3i(radius, height, z))
 	# side 4
 	for height in range(-vertical_radius, vertical_radius + 1):
@@ -85,6 +90,7 @@ func get_cube_index(radius: int, vertical_radius: int):
 	for x in range(-radius + 1, radius):
 		for z in range(-radius + 1, radius):
 			indexes.append(Vector3i(x, -vertical_radius, z))
+	
 	return indexes
 
 var global_player_chunk := Vector3i(0,0,0)
