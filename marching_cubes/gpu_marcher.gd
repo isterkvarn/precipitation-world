@@ -76,50 +76,7 @@ func init() -> void:
 	print(buffer_set)
 	print("done init for shader")
 
-
-func march_chunk(coord: Vector3i, TRI) -> void:
-	var time = Time.get_ticks_usec()
-	
-	loaded_mutex.lock()
-	loaded_chunks[coord] = 1.
-	loaded_mutex.unlock()
-	
-	# Update with chunk noise
-	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
-	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
-	rd_mutex.lock()
-	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
-	
-	var newtime1 := Time.get_ticks_usec()
-	
-	# Reset counter
-	var counter = [0]
-	var counter_bytes = PackedFloat32Array(counter).to_byte_array()
-	rd.buffer_update(counter_buffer, 0 ,counter_bytes.size(), counter_bytes)
-	
-	# Clear output buffer
-	rd.buffer_update(vertex_buffer, 0, dead_beef_arr.size(), dead_beef_arr)
-	
-	var compute_list = rd.compute_list_begin()
-	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
-	rd.compute_list_bind_uniform_set(compute_list, buffer_set, 0)
-	rd.compute_list_dispatch(compute_list, 4, 4, 4)
-	rd.compute_list_end()
-	
-	# GENERATE VERTEIES ON GPU
-	rd.submit()
-	rd.sync()
-	
-	var newtime2 := Time.get_ticks_usec()
-	
-	var ver_bytes = rd.buffer_get_data(vertex_buffer)
-	var vertex_output = ver_bytes.to_float32_array()
-	
-	counter_bytes = rd.buffer_get_data(counter_buffer)
-	rd_mutex.unlock()
-	var count_output = counter_bytes.to_int32_array()
-	
-	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
+func generate_mesh(vertex_output, coord):
 	
 	var marched = march_meshInstance()
 	var st := SurfaceTool.new()
@@ -172,7 +129,56 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	#add_child(marched) deffered because of threading
 	scene.add_child.call_deferred(marched)
 	
-	var end := Time.get_ticks_usec()
+
+func march_chunk(coord: Vector3i, TRI) -> void:
+	var time = Time.get_ticks_usec()
+	
+	loaded_mutex.lock()
+	loaded_chunks[coord] = 1.
+	loaded_mutex.unlock()
+	
+	# Update with chunk noise
+	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
+	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
+	rd_mutex.lock()
+	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
+	
+	var newtime1 := Time.get_ticks_usec()
+	
+	# Reset counter
+	var counter = [0]
+	var counter_bytes = PackedFloat32Array(counter).to_byte_array()
+	rd.buffer_update(counter_buffer, 0 ,counter_bytes.size(), counter_bytes)
+	
+	# Clear output buffer
+	rd.buffer_update(vertex_buffer, 0, dead_beef_arr.size(), dead_beef_arr)
+	
+	var compute_list = rd.compute_list_begin()
+	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
+	rd.compute_list_bind_uniform_set(compute_list, buffer_set, 0)
+	rd.compute_list_dispatch(compute_list, 4, 4, 4)
+	rd.compute_list_end()
+	
+	# GENERATE VERTEIES ON GPU
+	rd.submit()
+	rd.sync()
+	
+	var newtime2 := Time.get_ticks_usec()
+	
+	var ver_bytes = rd.buffer_get_data(vertex_buffer)
+	var vertex_output = ver_bytes.to_float32_array()
+	
+	counter_bytes = rd.buffer_get_data(counter_buffer)
+	rd_mutex.unlock()
+	var count_output = counter_bytes.to_int32_array()
+	
+	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
+	
+	# don't generate mesh if it's empty
+	if !vertex_output.is_empty():
+		generate_mesh(vertex_output, coord)
+	
+	#var end := Time.get_ticks_usec()
 	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
 	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
 	#print("time to generate mesh cpu: ", (end - newtime2) / 1000000.0)

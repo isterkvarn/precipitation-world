@@ -33,7 +33,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 37.6093, -0.80521)
 
 [node name="Terrain" parent="." instance=ExtResource("5_bla7e")]
 script = ExtResource("3_wkp1t")
-RENDER_DISTANCE = 8
+RENDER_DISTANCE = 32
 VERTICAL_RENDER_DISTANCE = 4
 
 [node name="chunk_time" type="Label" parent="Terrain"]
