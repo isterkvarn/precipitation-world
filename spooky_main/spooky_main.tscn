@@ -13,8 +13,8 @@ environment = ExtResource("2_l02h4")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866024, -0.433016, 0.249999, 0.405228, -0.314938, 0.858257, -0.292905, 0.844578, 0.448214, 0, 0, 0)
-light_color = Color(1, 0.266667, 0.164706, 1)
-light_energy = 0.7
+light_color = Color(1, 0.649876, 0.583961, 1)
+light_energy = 0.9
 shadow_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("1_w7x5f")]
