@@ -6,10 +6,17 @@ const MAX_SPEED = 10
 const JUMP_VELOCITY = 4.5
 const MOUSE_SENSITIVITY = 0.003
 
+const MAX_THRUST_LIGHT = 4
+
 @onready var rotation_helper = $RotationHelper
+@onready var thrust_light = $ThrustLight
+@export var enviroment: Environment = null
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	if enviroment != null:
+		$RotationHelper/Camera3D.environment = enviroment
 
 func _physics_process(delta: float) -> void:
 	# Add the gravity.
@@ -19,6 +26,16 @@ func _physics_process(delta: float) -> void:
 	# Handle jump.
 	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
+
+
+	var thurst_light_amount = thrust_light.light_energy
+	if Input.is_action_pressed("up"):
+		thurst_light_amount += 2 * MAX_THRUST_LIGHT * delta
+	else:
+		thurst_light_amount -= 4 * MAX_THRUST_LIGHT * delta
+		
+	thurst_light_amount = clampf(thurst_light_amount, 0, MAX_THRUST_LIGHT)
+	thrust_light.light_energy = thurst_light_amount
 
 	# Get the input direction and handle the movement/deceleration.
 	# As good practice, you should replace UI actions with custom gameplay actions.

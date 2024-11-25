@@ -13,13 +13,23 @@ script = ExtResource("1_mrk0t")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_wja4t")
 
-[node name="OmniLight3D" type="OmniLight3D" parent="."]
+[node name="ThrustLight" type="OmniLight3D" parent="."]
+light_color = Color(1, 1, 0.384314, 1)
 light_energy = 3.0
 omni_range = 30.0
 
 [node name="RotationHelper" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 
+[node name="SpotLight3D" type="SpotLight3D" parent="RotationHelper"]
+visible = false
+light_energy = 3.0
+spot_range = 40.0
+spot_attenuation = 0.0
+spot_angle = 20.0
+spot_angle_attenuation = 0.450625
+
 [node name="Camera3D" type="Camera3D" parent="RotationHelper"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0369054, 0)
 current = true
+far = 500.0
