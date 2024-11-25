@@ -146,7 +146,6 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 		st.add_vertex(vertex2)
 		st.add_vertex(vertex3)
 	
-	var newtime3 := Time.get_ticks_usec()
 	# Commit to a mesh.
 	st.generate_normals()
 	# hits generation performance and i couldn't measure any performance difference
@@ -168,8 +167,8 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	#add_child(marched) deffered because of threading
 	scene.add_child.call_deferred(marched)
 	
-	var newtime4 := Time.get_ticks_usec()
+	var end := Time.get_ticks_usec()
 	print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
 	print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
-	print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
-	print("Total time ", (newtime4 - time) / 1000000.0)
+	print("time to generate mesh cpu: ", (end - newtime2) / 1000000.0)
+	print("Total time ", (end - time) / 1000000.0)
