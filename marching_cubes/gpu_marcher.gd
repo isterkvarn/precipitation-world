@@ -86,6 +86,8 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
 	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
 	
+	var newtime1 := Time.get_ticks_usec()
+	
 	# Reset counter
 	var counter = [0]
 	var counter_bytes = PackedFloat32Array(counter).to_byte_array()
@@ -104,7 +106,7 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	rd.submit()
 	rd.sync()
 	
-	var newtime1 := Time.get_ticks_usec()
+	var newtime2 := Time.get_ticks_usec()
 	
 	var ver_bytes = rd.buffer_get_data(vertex_buffer)
 	var vertex_output = ver_bytes.to_float32_array()
@@ -144,7 +146,7 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 		st.add_vertex(vertex2)
 		st.add_vertex(vertex3)
 	
-	var newtime2 := Time.get_ticks_usec()
+	var newtime3 := Time.get_ticks_usec()
 	# Commit to a mesh.
 	st.generate_normals()
 	# hits generation performance and i couldn't measure any performance difference
@@ -166,7 +168,8 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	#add_child(marched) deffered because of threading
 	scene.add_child.call_deferred(marched)
 	
-	var newtime3 := Time.get_ticks_usec()
-	print("time to generate vertex gpu: ", (newtime1 - time) / 1000000.0)
-	print("time to generate mesh cpu: ", (newtime2 - newtime1) / 1000000.0)
-	print("Total time ", (newtime3 - time) / 1000000.0)
+	var newtime4 := Time.get_ticks_usec()
+	print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
+	print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
+	print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
+	print("Total time ", (newtime4 - time) / 1000000.0)

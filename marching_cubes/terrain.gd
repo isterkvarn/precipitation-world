@@ -42,20 +42,17 @@ func duplicate_2d(arr: Array):
 	return ret
 
 func get_worker_thread() -> Thread:
-	while true:
-		for worker: Thread in worker_threads:
-			if !worker.is_alive() && worker.is_started():
-				worker.wait_to_finish()
-				return worker
-	return # just so that the compiler is happy about all paths returning
+	for worker: Thread in worker_threads:
+		if !worker.is_alive() && worker.is_started():
+			worker.wait_to_finish()
+			return worker
+	return null# just so that the compiler is happy about all paths returning
 
 func show_chunk(coord: Vector3i) -> void:
-	marcher.loaded_mutex.lock()
-	var has_loaded = marcher.loaded_chunks.has(coord)
-	marcher.loaded_mutex.unlock()
-	if (!has_loaded):
-		var thread := get_worker_thread()
-		thread.start(marcher.march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS)))
+	var thread := get_worker_thread()
+	if thread == null:
+		return
+	thread.start(marcher.march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS)))
 
 func show_chunks_around_player(player_chunk: Vector3i) -> void:
 	var max_offset = floor(RENDER_DISTANCE/2)
@@ -66,17 +63,23 @@ func show_chunks_around_player(player_chunk: Vector3i) -> void:
 					if dy == max_offset:
 						continue
 					var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
-					print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
+					marcher.loaded_mutex.lock()
+					var has_loaded = marcher.loaded_chunks.has(chunk_coord)
+					marcher.loaded_mutex.unlock()
+					if has_loaded:
+						continue
+					#print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
 					show_chunk(chunk_coord)
+					return
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
-	if (chunk_thread.is_started() && !chunk_thread.is_alive()):
-		chunk_thread.wait_to_finish()
+	#if (chunk_thread.is_started() && !chunk_thread.is_alive()):
+		#chunk_thread.wait_to_finish()
 		# big oopsie if there is more than 1 player
-		for player: Node3D in get_tree().get_nodes_in_group("player"):
-			var player_chunk := Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
-			chunk_thread.start(show_chunks_around_player.bind(player_chunk))
+	for player: Node3D in get_tree().get_nodes_in_group("player"):
+		var player_chunk := Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
+		show_chunks_around_player(player_chunk)
 
 # tables from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 const TRIANGULATIONS = [
