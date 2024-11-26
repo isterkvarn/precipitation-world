@@ -136,24 +136,26 @@ func generate_mesh(vertex_output, coord):
 	#print("Total time ", (newtime4 - time) / 1000000.0)
 
 func march_chunk(coord: Vector3i, TRI, edited) -> void:
-	rd_mutex.lock()
+	var time = Time.get_ticks_usec()
+	
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
 	
-	var time = Time.get_ticks_usec()
-	
-	# Update with chunk noise
 	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
 	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
-	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
 	
 	# Update with chunk noise
 	if edited.is_empty():
 		edited.resize((CHUNK_SIZE+1)**3)
 		edited.fill(0.0)
-
 	var edited_bytes = PackedFloat32Array(edited).to_byte_array()
+	
+	rd_mutex.lock()
+	
+	# Update with chunk noise
+	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
+	
 	rd.buffer_update(edited_buffer, 0, edited_bytes.size(), edited_bytes)
 	
 	var newtime1 := Time.get_ticks_usec()
@@ -174,9 +176,9 @@ func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	var newtime2 := Time.get_ticks_usec()
 	
 	var ver_bytes = rd.buffer_get_data(vertex_buffer)
-	var vertex_output = ver_bytes.to_float32_array()
-	
 	rd_mutex.unlock()
+	
+	var vertex_output = ver_bytes.to_float32_array()
 	
 	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
 	
