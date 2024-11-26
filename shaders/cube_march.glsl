@@ -275,19 +275,9 @@ const int triTable[256][16] = {
 		{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 		{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
-// Noise
-
-
-
-// Marcher
 
 // Invocations in the (x, y, z) dimension
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
-
-layout(set = 0, binding = 0, std430) restrict buffer NoiseFloatBuffer {
-    float noise[];
-}
-noise_buffer;
 
 layout(set = 0, binding = 1, std430) restrict buffer EditFloatBuffer {
     float edited[];
@@ -305,21 +295,34 @@ layout(set = 0, binding = 3, std430) coherent buffer Size
 	int size;
 };
 
-layout(set = 0, binding = 5, std430) coherent buffer Lod
+layout(set = 0, binding = 0, std430) coherent buffer Lod
 {
 	int lod;
 };
+
+layout(set = 0, binding = 5, std430) coherent buffer Pos
+{
+	float pos[];
+}
+position_buffer;
 
 layout(set = 0, binding = 4, std430) coherent buffer Threshold 
 {
 	float threshold;
 };
 
+
+// Noise
+
 float getAt(vec3 pos) {
     int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
-    return noise_buffer.noise[idx] + edit_buffer.edited[idx];
+    float ground = max(min(position_buffer.pos[1] * size + pos.y, 1.0), -1.0);
+    return ground + edit_buffer.edited[idx];
 }
+
+
+// Marcher
 
 vec3 interp(vec3 edgeVertex1, float valueAtVertex1, vec3 edgeVertex2, float valueAtVertex2)
 {

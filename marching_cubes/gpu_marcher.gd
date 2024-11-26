@@ -3,11 +3,11 @@ class_name GpuMarcher extends Marcher
 var rd : RenderingDevice
 var rd_mutex := Mutex.new()
 var shader : RID
-var noise_buffer : RID
 var edited_buffer : RID
 var vertex_buffer : RID
 var buffer_set : RID
 var size_buffer : RID
+var pos_buffer : RID
 var lod_buffer : RID
 var threshold_buffer : RID
 var pipeline : RID
@@ -23,13 +23,6 @@ func init() -> void:
 	var shader_file := load("res://shaders/cube_march.glsl")
 	var shader_spirv: RDShaderSPIRV = shader_file.get_spirv()
 	shader = rd.shader_create_from_spirv(shader_spirv)
-	
-	# Create buffer for noise
-	noise_buffer = rd.storage_buffer_create(32*(CHUNK_SIZE+1)**3)
-	var n_uniform := RDUniform.new()
-	n_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	n_uniform.binding = 0 # this needs to match the "binding" in our shader file
-	n_uniform.add_id(noise_buffer)
 	
 	# Create buffer for edited
 	edited_buffer = rd.storage_buffer_create(32*(CHUNK_SIZE+1)**3)
@@ -59,13 +52,22 @@ func init() -> void:
 	size_uniform.binding = 3
 	size_uniform.add_id(size_buffer)
 	
+	# create buffer for chunk position
+	var chunk_pos = [0.0, 0.0, 0.0]
+	var pos_bytes = PackedInt32Array(chunk_pos).to_byte_array()
+	pos_buffer = rd.storage_buffer_create(pos_bytes.size(), pos_bytes)
+	var pos_uniform = RDUniform.new()
+	pos_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	pos_uniform.binding = 5
+	pos_uniform.add_id(pos_buffer)
+	
 	# create buffer for lod
 	var lod = [1]
 	var lod_bytes = PackedInt32Array(lod).to_byte_array()
 	lod_buffer = rd.storage_buffer_create(lod_bytes.size(), lod_bytes)
 	var lod_uniform = RDUniform.new()
 	lod_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	lod_uniform.binding = 5
+	lod_uniform.binding = 0
 	lod_uniform.add_id(lod_buffer)
 	
 	# create buffer for threshold
@@ -77,7 +79,7 @@ func init() -> void:
 	threshold_uniform.binding = 4
 	threshold_uniform.add_id(threshold_buffer)
 	
-	var buffers = [n_uniform, e_uniform, v_uniform, size_uniform, lod_uniform, threshold_uniform]
+	var buffers = [pos_uniform, e_uniform, v_uniform, size_uniform, lod_uniform, threshold_uniform]
 	buffer_set = rd.uniform_set_create(buffers, shader, 0)
 	pipeline = rd.compute_pipeline_create(shader)
 	rd_mutex.unlock()
@@ -151,9 +153,6 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	loaded_chunks[coord] = lod
 	loaded_mutex.unlock()
 	
-	var terrain_noise = terrain_generator.get_terrain_3d(lod, CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
-	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
-	
 	# Update with chunk noise
 	if edited.is_empty():
 		edited.resize((CHUNK_SIZE+1)**3)
@@ -162,16 +161,14 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	
 	rd_mutex.lock()
 	
-	# Update with chunk noise
-	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
-	
 	rd.buffer_update(edited_buffer, 0, edited_bytes.size(), edited_bytes)
+	
+	var pos_bytes = PackedFloat32Array([coord.x, coord.y, coord.z]).to_byte_array()
+	rd.buffer_update(pos_buffer, 0, pos_bytes.size(), pos_bytes)
 	
 	# update lod
 	var lod_bytes = PackedInt32Array([lod]).to_byte_array()
 	rd.buffer_update(lod_buffer, 0, lod_bytes.size(), lod_bytes)
-	
-	var newtime1 := Time.get_ticks_usec()
 	
 	# Clear output buffer
 	rd.buffer_update(vertex_buffer, 0, dead_beef_arr.size(), dead_beef_arr)
@@ -186,7 +183,8 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	rd.submit()
 	rd.sync()
 	
-	var newtime2 := Time.get_ticks_usec()
+	var newtime1 := Time.get_ticks_usec()
+	
 	
 	var ver_bytes = rd.buffer_get_data(vertex_buffer)
 	rd_mutex.unlock()
@@ -196,12 +194,13 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
 	
 	# don't generate mesh if it's empty
+	
 	if !vertex_output.is_empty():
 		generate_mesh(vertex_output, coord, lod)
 		
+	var newtime2 := Time.get_ticks_usec()
 	
 	#var end := Time.get_ticks_usec()
-	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
-	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
-	#print("time to generate mesh cpu: ", (end - newtime2) / 1000000.0)
-	#print("Total time ", (end - time) / 1000000.0)
+	print("time to generate polygons gpu: ", (newtime1 - time) / 1000000.0)
+	print("time to generate mesh cpu: ", (newtime2 - newtime1) / 1000000.0)
+	print("Total time ", (newtime2 - time) / 1000000.0)

@@ -1,7 +1,7 @@
 extends Node3D
 
 @export var CHUNK_SIZE := 32 # number of cubes in a chunk 
-@export var RENDER_DISTANCE := 4 # in chunks
+@export var RENDER_DISTANCE := 32 # in chunks
 @export var VERTICAL_RENDER_DISTANCE := 5
 @export var LOD2_DISTANCE := 8
 @export var LOD4_DISTANCE := 12
@@ -64,10 +64,10 @@ func show_chunk(coord: Vector3i, lod: int, thread: Thread) -> bool:
 	var edited = []
 	if edited_chunks.has(coord):
 		edited = edited_chunks[coord]
-	var start := Time.get_ticks_usec()
+	#var start := Time.get_ticks_usec()
 	thread.start(marcher.march_chunk.bind(coord, lod, duplicate_2d(TRIANGULATIONS), edited))
 	var end := Time.get_ticks_usec()
-	chunk_time_label.set_text.call_deferred("chunk time: " + str((end - start) / 1000000.0) + "\nlod: " + str(lod))
+	#chunk_time_label.set_text.call_deferred("chunk time: " + str((end - start) / 1000000.0) + "\nlod: " + str(lod))
 	return true
 
 func update_chunk(chunk_name: String, chunk: MeshInstance3D):
@@ -79,8 +79,8 @@ func update_chunk(chunk_name: String, chunk: MeshInstance3D):
 
 func show_chunks_circle(offset: int, vertical_offset: int, player_chunk: Vector3i, lod: int, thread: Thread):
 	for dx in range(-offset, offset+1):
-		for dz in range(-vertical_offset, vertical_offset+1):
-			for dy in range(-offset, offset+1):
+		for dz in range(-offset, offset+1):
+			for dy in range(-vertical_offset, vertical_offset+1):
 				var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
 				marcher.loaded_mutex.lock()
 				var has_loaded = marcher.loaded_chunks.get(chunk_coord)
@@ -107,15 +107,15 @@ func show_chunks_around_player(player_chunk: Vector3i) -> void:
 		return
 	
 	for offset in range(0, max_offset + 1):
-		if offset >= lod4_offset && offset <= lod8_offset:
-			if show_chunks_circle(offset, vertical_offset, player_chunk, 8, thread):
-				return
-		if offset >= lod2_offset && offset <= lod4_offset:
-			if show_chunks_circle(offset, vertical_offset, player_chunk, 4, thread):
-				return
-		if offset >= render_offset && offset <= lod2_offset:
-			if show_chunks_circle(offset, vertical_offset, player_chunk, 2, thread):
-				return
+		#if offset >= lod4_offset && offset <= lod8_offset:
+			#if show_chunks_circle(offset, vertical_offset, player_chunk, 8, thread):
+				#return
+		#if offset >= lod2_offset && offset <= lod4_offset:
+			#if show_chunks_circle(offset, vertical_offset, player_chunk, 4, thread):
+				#return
+		#if offset >= render_offset && offset <= lod2_offset:
+			#if show_chunks_circle(offset, vertical_offset, player_chunk, 2, thread):
+				#return
 		if offset <= render_offset:
 			if show_chunks_circle(offset, vertical_offset, player_chunk, 1, thread):
 				return
