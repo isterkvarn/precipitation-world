@@ -55,10 +55,7 @@ func get_worker_thread() -> Thread:
 
 @onready var chunk_time_label := $chunk_time
 
-func show_chunk(coord: Vector3i) -> bool:
-	var thread := get_worker_thread()
-	if thread == null:
-		return false
+func show_chunk(coord: Vector3i, thread: Thread) -> bool:
 	var edited = []
 	if edited_chunks.has(coord):
 		edited = edited_chunks[coord]
@@ -69,40 +66,18 @@ func show_chunk(coord: Vector3i) -> bool:
 	return true
 
 func update_chunk(chunk_name: String, chunk):
-	
 	# Remove chunk if it already exit
 	if chunk_name in chunks:
 		chunks[chunk_name].queue_free()
 	chunks[chunk_name] = chunk
 	add_child(chunk)
 
-var global_player_chunk := Vector3i(0,0,0)
-var global_player_chunk_mutex := Mutex.new()
-
-#func show_chunks_around_player() -> void:
-	#global_player_chunk_mutex.lock()
-	#var player_chunk := global_player_chunk
-	#global_player_chunk_mutex.unlock()
-	#for offset in range(RENDER_DISTANCE):
-		#
-		#var positions = get_cube_index(offset, min(offset, VERTICAL_RENDER_DISTANCE))
-		#for pos: Vector3i in positions:
-			#var chunk_coord := player_chunk + pos
-			#marcher.loaded_mutex.lock()
-			#var has_loaded = marcher.loaded_chunks.has(chunk_coord)
-			#marcher.loaded_mutex.unlock()
-			#if has_loaded:
-				#continue
-			##print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
-			#if !show_chunk(chunk_coord):
-				#return
-
-func show_chunks_around_player() -> void:
+func show_chunks_around_player(player_chunk: Vector3i) -> void:
 	var max_offset = floor(RENDER_DISTANCE/2)
 	
-	global_player_chunk_mutex.lock()
-	var player_chunk := global_player_chunk
-	global_player_chunk_mutex.unlock()
+	var thread := get_worker_thread()
+	if thread == null:
+		return
 	
 	for offset in range(0, max_offset + 1):
 		for dx in range(-offset, offset+1):
@@ -111,13 +86,13 @@ func show_chunks_around_player() -> void:
 					if dy == max_offset:
 						continue
 					
-					global_player_chunk_mutex.lock()
-					var global_chunk = Vector3i(global_player_chunk)
-					global_player_chunk_mutex.unlock()
-					# player has moved, restart
-					if(player_chunk != global_chunk):
-						print("player moved chunk")
-						return
+					#global_player_chunk_mutex.lock()
+					#var global_chunk = Vector3i(global_player_chunk)
+					#global_player_chunk_mutex.unlock()
+					#player has moved, restart
+					#if(player_chunk != global_chunk):
+						#print("player moved chunk")
+						#return
 					
 					var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
 					marcher.loaded_mutex.lock()
@@ -126,8 +101,8 @@ func show_chunks_around_player() -> void:
 					if has_loaded:
 						continue
 					#print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
-					if !show_chunk(chunk_coord):
-						return
+					show_chunk(chunk_coord, thread)
+					return
 
 func edit_terrain(coord: Vector3, radius: float, power: float) -> void:
 	# Might not work for radius bigger then chunk_size
@@ -179,17 +154,12 @@ func check_player_inputs() -> void:
 func _process(_delta: float) -> void:
 	check_player_inputs()
 	var player = %Player
-	$DebugBall.position = CHUNK_SIZE * Vector3(Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE)))
+	#$DebugBall.position = CHUNK_SIZE * Vector3(Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE)))
 	#if (chunk_thread.is_started() && !chunk_thread.is_alive()):
 		#chunk_thread.wait_to_finish()
 		
-	global_player_chunk_mutex.lock()
-	global_player_chunk = Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
-	global_player_chunk_mutex.unlock()
-	if (chunk_thread.is_started() && !chunk_thread.is_alive()):
-		chunk_thread.wait_to_finish()
-		# big oopsie if there is more than 1 player
-		chunk_thread.start(show_chunks_around_player)
+	var player_chunk = Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
+	show_chunks_around_player(player_chunk)
 
 # tables from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 const TRIANGULATIONS = [
