@@ -10,6 +10,10 @@ var chunk_thread: Thread
 
 var worker_threads: Array
 
+var edited_chunks: Dictionary
+
+var chunks: Dictionary
+
 func noop():
 	pass
 
@@ -52,7 +56,19 @@ func show_chunk(coord: Vector3i) -> void:
 	var thread := get_worker_thread()
 	if thread == null:
 		return
-	thread.start(marcher.march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS)))
+	var edited = []
+	if edited_chunks.has(coord):
+		edited = edited_chunks[coord]
+	thread.start(marcher.march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS), edited))
+
+func update_chunk(chunk_name: String, chunk):
+	
+	# Remove chunk if it already exit
+	if chunk_name in chunks:
+		chunks[chunk_name].queue_free()
+		
+	chunks[chunk_name] = chunk
+	add_child(chunk)
 
 func show_chunks_around_player(player_chunk: Vector3i) -> void:
 	var max_offset = floor(RENDER_DISTANCE/2)
@@ -72,14 +88,60 @@ func show_chunks_around_player(player_chunk: Vector3i) -> void:
 					show_chunk(chunk_coord)
 					return
 
+func edit_terrain(coord: Vector3, radius: float, power: float) -> void:
+	# Might not work for radius bigger then chunk_size
+	var effected_chunks = []
+
+	for x_i in range(-1, 2):
+		for y_i in range(-1, 2):
+			for z_i in range(-1, 2):
+				var x = coord.x + radius * x_i
+				var y = coord.y + radius * y_i
+				var z = coord.z + radius * z_i
+				var chunk = Vector3i(floor(x / CHUNK_SIZE), floor(y / CHUNK_SIZE), floor(z / CHUNK_SIZE))
+				if not chunk in effected_chunks:
+					effected_chunks.append(chunk)
+					
+
+	for chunk in effected_chunks:
+		if not chunk in edited_chunks:
+			var edited_data = []
+
+			edited_data.resize((CHUNK_SIZE+1)**3)
+			edited_data.fill(0.0)
+				
+			edited_chunks[chunk] = edited_data
+		
+		for x in range(CHUNK_SIZE+1):
+			for y in range(CHUNK_SIZE+1):
+				for z in range(CHUNK_SIZE+1):
+					var noise_pos = CHUNK_SIZE * chunk + Vector3i(x, y, z)
+					if noise_pos.distance_to(coord) <= radius:
+						edited_chunks[chunk][x * (CHUNK_SIZE+1)**2 + y * (CHUNK_SIZE+1) + z] = power
+	
+		#var old_chunk_inst = get_node(str(chunk))
+		
+		#if old_chunk_inst != null:
+			#old_chunk_inst.queue_free()
+		
+		marcher.loaded_mutex.lock()
+		marcher.loaded_chunks.erase(chunk)
+		marcher.loaded_mutex.unlock()
+
+func check_player_inputs() -> void:
+	if Input.is_action_just_pressed("explosion"):
+		edit_terrain(%Player.position, 16, 100)
+
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
+	check_player_inputs()
+	var player = %Player
+	$DebugBall.position = CHUNK_SIZE * Vector3(Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE)))
 	#if (chunk_thread.is_started() && !chunk_thread.is_alive()):
 		#chunk_thread.wait_to_finish()
-		# big oopsie if there is more than 1 player
-	for player: Node3D in get_tree().get_nodes_in_group("player"):
-		var player_chunk := Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
-		show_chunks_around_player(player_chunk)
+
+	var player_chunk := Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
+	show_chunks_around_player(player_chunk)
 
 # tables from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 const TRIANGULATIONS = [

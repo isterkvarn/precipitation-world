@@ -31,12 +31,12 @@ func march_meshInstance() -> MeshInstance3D:
 	var marched := MeshInstance3D.new()
 	marched.material_override = StandardMaterial3D.new()
 	marched.material_override.set_cull_mode(0)
-	#marched.material_override.albedo_color = Color(1, 0.2, 0.2)
-	marched.material_override.albedo_color = Color(0.6, 0.4, 0.4)
+	marched.material_override.albedo_color = Color(1, 0.2, 0.2)
+	#marched.material_override.albedo_color = Color(0.6, 0.4, 0.4)
 	return marched
 
 func init() -> void:
 	print("init should never be called but be implemented by the extending class")
 
-func march_chunk(coord: Vector3i, TRI) -> void:
+func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	print("march_chunk should never be called but be implemented by the extending class")

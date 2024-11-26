@@ -3,6 +3,7 @@ class_name GpuMarcher extends Marcher
 var rd : RenderingDevice
 var shader : RID
 var noise_buffer : RID
+var edited_buffer : RID
 var vertex_buffer : RID
 var counter_buffer : RID
 var buffer_set : RID
@@ -27,6 +28,13 @@ func init() -> void:
 	n_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	n_uniform.binding = 0 # this needs to match the "binding" in our shader file
 	n_uniform.add_id(noise_buffer)
+	
+	# Create buffer for edited
+	edited_buffer = rd.storage_buffer_create(32*(CHUNK_SIZE+1)**3)
+	var e_uniform := RDUniform.new()
+	e_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	e_uniform.binding = 5 # this needs to match the "binding" in our shader file
+	e_uniform.add_id(edited_buffer)
 	
 	# Create buffer for counter
 	var counter = [0]
@@ -67,14 +75,14 @@ func init() -> void:
 	threshold_uniform.binding = 4
 	threshold_uniform.add_id(threshold_buffer)
 	
-	var buffers = [n_uniform, c_uniform, v_uniform, size_uniform, threshold_uniform]
+	var buffers = [n_uniform, e_uniform, c_uniform, v_uniform, size_uniform, threshold_uniform]
 	buffer_set = rd.uniform_set_create(buffers, shader, 0)
 	pipeline = rd.compute_pipeline_create(shader)
 	print(buffer_set)
 	print("done init for shader")
 
 
-func march_chunk(coord: Vector3i, TRI) -> void:
+func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
@@ -85,6 +93,14 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
 	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
 	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
+	
+	# Update with chunk noise
+	if edited.is_empty():
+		edited.resize((CHUNK_SIZE+1)**3)
+		edited.fill(0.0)
+
+	var edited_bytes = PackedFloat32Array(edited).to_byte_array()
+	rd.buffer_update(edited_buffer, 0, edited_bytes.size(), edited_bytes)
 	
 	var newtime1 := Time.get_ticks_usec()
 	
@@ -166,10 +182,11 @@ func march_chunk(coord: Vector3i, TRI) -> void:
 		marched.get_node("_col").get_node("CollisionShape3D").shape.set_backface_collision_enabled(true)
 	
 	#add_child(marched) deffered because of threading
-	scene.add_child.call_deferred(marched)
+	marched.name = str(coord)
+	scene.update_chunk.call_deferred(str(coord), marched)
 	
 	var newtime4 := Time.get_ticks_usec()
-	print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
-	print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
-	print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
-	print("Total time ", (newtime4 - time) / 1000000.0)
+	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
+	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
+	#print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
+	#print("Total time ", (newtime4 - time) / 1000000.0)

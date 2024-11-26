@@ -1,7 +1,6 @@
-[gd_scene load_steps=8 format=3 uid="uid://cmgoblymihel6"]
+[gd_scene load_steps=7 format=3 uid="uid://cmgoblymihel6"]
 
 [ext_resource type="PackedScene" uid="uid://cslf0t6enf4t5" path="res://player/player.tscn" id="2_nqgyn"]
-[ext_resource type="Script" path="res://marching_cubes/terrain.gd" id="3_wkp1t"]
 [ext_resource type="PackedScene" uid="uid://butfi15jwpi8p" path="res://marching_cubes/terrain.tscn" id="5_bla7e"]
 [ext_resource type="Script" path="res://fps_counter.gd" id="6_aqckv"]
 
@@ -32,7 +31,6 @@ unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 37.6093, -0.80521)
 
 [node name="Terrain" parent="." instance=ExtResource("5_bla7e")]
-script = ExtResource("3_wkp1t")
 RENDER_DISTANCE = 32
 
 [node name="fps_counter" type="Label" parent="."]

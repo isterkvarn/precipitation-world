@@ -116,7 +116,7 @@ func march_animation(coord: Vector3i, TRI) -> void:
 	scene.remove_child(box)
 
 
-func march_chunk(coord: Vector3i, TRI) -> void:
+func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()

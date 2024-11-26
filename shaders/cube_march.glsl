@@ -285,6 +285,11 @@ layout(set = 0, binding = 0, std430) restrict buffer NoiseFloatBuffer {
 }
 noise_buffer;
 
+layout(set = 0, binding = 5, std430) restrict buffer EditFloatBuffer {
+    float edited[];
+}
+edit_buffer;
+
 layout(set = 0, binding = 1, std430) coherent buffer Counter
 {
 	uint counter;
@@ -309,7 +314,7 @@ layout(set = 0, binding = 4, std430) coherent buffer Threshold
 float getAt(vec3 pos) {
     int size_pad = size + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
-    return noise_buffer.noise[idx];
+    return noise_buffer.noise[idx] + edit_buffer.edited[idx];
 }
 
 vec3 interp(vec3 edgeVertex1, float valueAtVertex1, vec3 edgeVertex2, float valueAtVertex2)
