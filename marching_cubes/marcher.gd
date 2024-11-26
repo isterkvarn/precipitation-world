@@ -32,6 +32,7 @@ func march_meshInstance() -> MeshInstance3D:
 	marched.material_override = StandardMaterial3D.new()
 	marched.material_override.set_cull_mode(0)
 	marched.material_override.albedo_color = Color(1, 0.2, 0.2)
+	marched.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
 	#marched.material_override.albedo_color = Color(0.6, 0.4, 0.4)
 	return marched
 

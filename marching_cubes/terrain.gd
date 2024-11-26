@@ -143,12 +143,15 @@ func edit_terrain(coord: Vector3, radius: float, power: float) -> void:
 		marcher.loaded_mutex.lock()
 		marcher.loaded_chunks.erase(chunk)
 		marcher.loaded_mutex.unlock()
-		print(chunk)
-	print("here")
 
 func check_player_inputs() -> void:
-	if Input.is_action_just_pressed("explosion"):
-		edit_terrain(%Player.position, 16, 100)
+	var shoot_ray : RayCast3D = %Player.get_shootray()
+	
+	if Input.is_action_just_pressed("explosion") and shoot_ray.is_colliding():
+		edit_terrain(shoot_ray.get_collision_point(), 16, 100)
+		
+	if Input.is_action_just_pressed("build") and shoot_ray.is_colliding():
+		edit_terrain(shoot_ray.get_collision_point(), 8, -100)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:

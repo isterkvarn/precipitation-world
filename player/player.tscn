@@ -33,3 +33,6 @@ spot_angle_attenuation = 0.450625
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0369054, 0)
 current = true
 far = 500.0
+
+[node name="ShootRay" type="RayCast3D" parent="RotationHelper"]
+target_position = Vector3(0, 0, -100)
