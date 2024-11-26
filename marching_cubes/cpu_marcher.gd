@@ -116,13 +116,13 @@ func march_animation(coord: Vector3i, TRI) -> void:
 	scene.remove_child(box)
 
 
-func march_chunk(coord: Vector3i, TRI, edited) -> void:
+func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
 	var time = Time.get_ticks_usec()
 	
-	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
+	var terrain_noise = terrain_generator.get_terrain_3d(lod, CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
 	var newtime3 := Time.get_ticks_usec()
 	
 	var marched = march_meshInstance()
