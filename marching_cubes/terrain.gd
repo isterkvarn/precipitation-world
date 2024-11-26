@@ -25,9 +25,9 @@ func _ready() -> void:
 	
 	var num_threads = 1 #RENDER_DISTANCE ** 4
 	# for some reason if this is 3, then 500% (5 cores) of the cpu is used
-	var num_cores = OS.get_processor_count() / 2 - 3
-	#if (num_cores > num_threads):
-		#num_threads = num_cores
+	var num_cores = OS.get_processor_count() / 2 - 2
+	if (num_cores > num_threads):
+		num_threads = num_cores
 	
 	print("using ", num_threads, " threads ")
 	for x in range(num_threads):
