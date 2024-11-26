@@ -89,7 +89,7 @@ func show_chunks_circle(offset: int, vertical_offset: int, player_chunk: Vector3
 					continue
 
 				#print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
-				print("rendering with ", lod, " was ", has_loaded)
+				#print("rendering with ", lod, " was ", has_loaded)
 				show_chunk(chunk_coord, lod, thread)
 				return true
 	return false
