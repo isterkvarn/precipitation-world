@@ -285,15 +285,10 @@ layout(set = 0, binding = 0, std430) restrict buffer NoiseFloatBuffer {
 }
 noise_buffer;
 
-layout(set = 0, binding = 5, std430) restrict buffer EditFloatBuffer {
+layout(set = 0, binding = 1, std430) restrict buffer EditFloatBuffer {
     float edited[];
 }
 edit_buffer;
-
-layout(set = 0, binding = 1, std430) coherent buffer Counter
-{
-	uint counter;
-};
 
 // A binding to the buffer we create in our script
 layout(set = 0, binding = 2, std430) restrict buffer VertexFloatBuffer {

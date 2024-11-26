@@ -1,7 +1,8 @@
 extends Node3D
 
 @export var CHUNK_SIZE := 32 # number of cubes in a chunk 
-@export var RENDER_DISTANCE := 4 # in chunks
+@export var RENDER_DISTANCE := 8 # in chunks
+@export var VERTICAL_RENDER_DISTANCE := 4
 @export var threshold := 0.1
 
 var marcher: Marcher = GpuMarcher.new(self, CHUNK_SIZE, threshold)
@@ -25,7 +26,7 @@ func _ready() -> void:
 	var num_threads = 1 #RENDER_DISTANCE ** 4
 	# for some reason if this is 3, then 500% (5 cores) of the cpu is used
 	var num_cores = OS.get_processor_count() / 2 - 3
-	if (num_threads > num_cores):
+	if (num_cores > num_threads):
 		num_threads = num_cores
 	
 	print("using ", num_threads, " threads ")
@@ -46,11 +47,14 @@ func duplicate_2d(arr: Array):
 	return ret
 
 func get_worker_thread() -> Thread:
-	for worker: Thread in worker_threads:
-		if !worker.is_alive() && worker.is_started():
-			worker.wait_to_finish()
-			return worker
-	return null# just so that the compiler is happy about all paths returning
+	while true:
+		for worker: Thread in worker_threads:
+			if !worker.is_alive() && worker.is_started():
+				worker.wait_to_finish()
+				return worker
+	return null # just so that the compiler is happy about all paths returning
+
+@onready var chunk_time_label := $chunk_time
 
 func show_chunk(coord: Vector3i) -> void:
 	var thread := get_worker_thread()
@@ -59,7 +63,10 @@ func show_chunk(coord: Vector3i) -> void:
 	var edited = []
 	if edited_chunks.has(coord):
 		edited = edited_chunks[coord]
+	var start := Time.get_ticks_usec()
 	thread.start(marcher.march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS), edited))
+	var end := Time.get_ticks_usec()
+	chunk_time_label.set_text.call_deferred("chunk generation time: " + str((end - start) / 1000000.0))
 
 func update_chunk(chunk_name: String, chunk):
 	
@@ -70,23 +77,64 @@ func update_chunk(chunk_name: String, chunk):
 	chunks[chunk_name] = chunk
 	add_child(chunk)
 
-func show_chunks_around_player(player_chunk: Vector3i) -> void:
-	var max_offset = floor(RENDER_DISTANCE/2)
-	for offset in range(0, max_offset + 1):
-		for dx in range(-offset, offset+1):
-			for dz in range(-offset, offset+1):
-				for dy in range(-offset, offset+1):
-					if dy == max_offset:
-						continue
-					var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
-					marcher.loaded_mutex.lock()
-					var has_loaded = marcher.loaded_chunks.has(chunk_coord)
-					marcher.loaded_mutex.unlock()
-					if has_loaded:
-						continue
-					#print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
-					show_chunk(chunk_coord)
-					return
+# returns the indicies of a cube around the player
+func get_cube_index(radius: int, vertical_radius: int):
+	if radius == 0:
+		return [Vector3i(0,0,0)]
+	var indexes := []
+	# side 1
+	for height in range(-vertical_radius, vertical_radius + 1):
+		for x in range(-radius, radius):
+			indexes.append(Vector3i(x, height, radius))
+	# side 2
+	for height in range(-vertical_radius, vertical_radius + 1):
+		for x in range(-radius + 1, radius + 1):
+			indexes.append(Vector3i(x, height, -radius))
+	# side 3
+	for height in range(-vertical_radius, vertical_radius + 1):
+		for z in range(-radius + 1, radius + 1):
+			indexes.append(Vector3i(radius, height, z))
+	# side 4
+	for height in range(-vertical_radius, vertical_radius + 1):
+		for z in range(-radius, radius):
+			indexes.append(Vector3i(-radius, height, z))
+	# top
+	for x in range(-radius + 1, radius):
+		for z in range(-radius + 1, radius):
+			indexes.append(Vector3i(x, vertical_radius, z))
+	# bottom
+	for x in range(-radius + 1, radius):
+		for z in range(-radius + 1, radius):
+			indexes.append(Vector3i(x, -vertical_radius, z))
+	
+	return indexes
+
+var global_player_chunk := Vector3i(0,0,0)
+var global_player_chunk_mutex := Mutex.new()
+
+func show_chunks_around_player() -> void:
+	global_player_chunk_mutex.lock()
+	var player_chunk := global_player_chunk
+	global_player_chunk_mutex.unlock()
+	for offset in range(RENDER_DISTANCE):
+		global_player_chunk_mutex.lock()
+		var global_chunk = Vector3i(global_player_chunk)
+		global_player_chunk_mutex.unlock()
+		# player has moved, restart
+		if(player_chunk != global_chunk):
+			print("player moved chunk")
+			return
+		
+		var positions = get_cube_index(offset, min(offset, VERTICAL_RENDER_DISTANCE))
+		for pos: Vector3i in positions:
+			var chunk_coord := player_chunk + pos
+			marcher.loaded_mutex.lock()
+			var has_loaded = marcher.loaded_chunks.has(chunk_coord)
+			marcher.loaded_mutex.unlock()
+			if has_loaded:
+				continue
+			#print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
+			show_chunk(chunk_coord)
 
 func edit_terrain(coord: Vector3, radius: float, power: float) -> void:
 	# Might not work for radius bigger then chunk_size
@@ -139,9 +187,14 @@ func _process(_delta: float) -> void:
 	$DebugBall.position = CHUNK_SIZE * Vector3(Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE)))
 	#if (chunk_thread.is_started() && !chunk_thread.is_alive()):
 		#chunk_thread.wait_to_finish()
-
-	var player_chunk := Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
-	show_chunks_around_player(player_chunk)
+		
+	global_player_chunk_mutex.lock()
+	global_player_chunk = Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
+	global_player_chunk_mutex.unlock()
+	if (chunk_thread.is_started() && !chunk_thread.is_alive()):
+		chunk_thread.wait_to_finish()
+		# big oopsie if there is more than 1 player
+		chunk_thread.start(show_chunks_around_player)
 
 # tables from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 const TRIANGULATIONS = [

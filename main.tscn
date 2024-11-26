@@ -33,6 +33,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 37.6093, -0.80521)
 [node name="Terrain" parent="." instance=ExtResource("5_bla7e")]
 RENDER_DISTANCE = 32
 
+[node name="chunk_time" type="Label" parent="Terrain"]
+offset_top = 20.0
+offset_right = 197.0
+offset_bottom = 43.0
+text = "Time for chunk rendering"
+
 [node name="fps_counter" type="Label" parent="."]
 offset_right = 40.0
 offset_bottom = 23.0

@@ -1,11 +1,11 @@
 class_name GpuMarcher extends Marcher
 
 var rd : RenderingDevice
+var rd_mutex := Mutex.new()
 var shader : RID
 var noise_buffer : RID
 var edited_buffer : RID
 var vertex_buffer : RID
-var counter_buffer : RID
 var buffer_set : RID
 var size_buffer : RID
 var threshold_buffer : RID
@@ -15,6 +15,7 @@ var dead_beef_arr = PackedFloat32Array()
 
 func init() -> void:
 	# Create a local rendering device for compute shaders
+	rd_mutex.lock()
 	rd = RenderingServer.create_local_rendering_device()
 	
 	# Load GLSL shader
@@ -33,17 +34,8 @@ func init() -> void:
 	edited_buffer = rd.storage_buffer_create(32*(CHUNK_SIZE+1)**3)
 	var e_uniform := RDUniform.new()
 	e_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	e_uniform.binding = 5 # this needs to match the "binding" in our shader file
+	e_uniform.binding = 1 # this needs to match the "binding" in our shader file
 	e_uniform.add_id(edited_buffer)
-	
-	# Create buffer for counter
-	var counter = [0]
-	var counter_bytes = PackedInt32Array(counter).to_byte_array()
-	counter_buffer = rd.storage_buffer_create(counter_bytes.size(), counter_bytes)
-	var c_uniform = RDUniform.new()
-	c_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	c_uniform.binding = 1
-	c_uniform.add_id(counter_buffer)
 	
 	# Create buffer from output vertices
 	# 32 size of float, 3 floats per vertex, max 15 vertex per cube, chunk size pow 3 cubes
@@ -75,62 +67,15 @@ func init() -> void:
 	threshold_uniform.binding = 4
 	threshold_uniform.add_id(threshold_buffer)
 	
-	var buffers = [n_uniform, e_uniform, c_uniform, v_uniform, size_uniform, threshold_uniform]
+	var buffers = [n_uniform, e_uniform, v_uniform, size_uniform, threshold_uniform]
 	buffer_set = rd.uniform_set_create(buffers, shader, 0)
 	pipeline = rd.compute_pipeline_create(shader)
+	rd_mutex.unlock()
 	print(buffer_set)
 	print("done init for shader")
-
-
-func march_chunk(coord: Vector3i, TRI, edited) -> void:
-	loaded_mutex.lock()
-	loaded_chunks[coord] = 1.
-	loaded_mutex.unlock()
-	
-	var time = Time.get_ticks_usec()
-	
-	# Update with chunk noise
-	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
-	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
-	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
-	
-	# Update with chunk noise
-	if edited.is_empty():
-		edited.resize((CHUNK_SIZE+1)**3)
-		edited.fill(0.0)
-
-	var edited_bytes = PackedFloat32Array(edited).to_byte_array()
-	rd.buffer_update(edited_buffer, 0, edited_bytes.size(), edited_bytes)
-	
-	var newtime1 := Time.get_ticks_usec()
-	
-	# Reset counter
-	var counter = [0]
-	var counter_bytes = PackedFloat32Array(counter).to_byte_array()
-	rd.buffer_update(counter_buffer, 0 ,counter_bytes.size(), counter_bytes)
-	
-	# Clear output buffer
-	rd.buffer_update(vertex_buffer, 0, dead_beef_arr.size(), dead_beef_arr)
-	
-	var compute_list = rd.compute_list_begin()
-	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
-	rd.compute_list_bind_uniform_set(compute_list, buffer_set, 0)
-	rd.compute_list_dispatch(compute_list, 4, 4, 4)
-	rd.compute_list_end()
-	
-	# GENERATE VERTEIES ON GPU
-	rd.submit()
-	rd.sync()
-	
-	var newtime2 := Time.get_ticks_usec()
-	
-	var ver_bytes = rd.buffer_get_data(vertex_buffer)
-	var vertex_output = ver_bytes.to_float32_array()
-	
-	counter_bytes = rd.buffer_get_data(counter_buffer)
-	var count_output = counter_bytes.to_int32_array()
 	
 	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
+func generate_mesh(vertex_output, coord):
 	
 	var marched = march_meshInstance()
 	var st := SurfaceTool.new()
@@ -162,7 +107,6 @@ func march_chunk(coord: Vector3i, TRI, edited) -> void:
 		st.add_vertex(vertex2)
 		st.add_vertex(vertex3)
 	
-	var newtime3 := Time.get_ticks_usec()
 	# Commit to a mesh.
 	st.generate_normals()
 	# hits generation performance and i couldn't measure any performance difference
@@ -184,9 +128,61 @@ func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	#add_child(marched) deffered because of threading
 	marched.name = str(coord)
 	scene.update_chunk.call_deferred(str(coord), marched)
-	
+
 	var newtime4 := Time.get_ticks_usec()
 	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
 	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
 	#print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
 	#print("Total time ", (newtime4 - time) / 1000000.0)
+
+func march_chunk(coord: Vector3i, TRI, edited) -> void:
+	loaded_mutex.lock()
+	loaded_chunks[coord] = 1.
+	loaded_mutex.unlock()
+	
+	var time = Time.get_ticks_usec()
+	
+	# Update with chunk noise
+	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
+	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
+	rd.buffer_update(noise_buffer, 0, terrain_bytes.size(), terrain_bytes)
+	
+	# Update with chunk noise
+	if edited.is_empty():
+		edited.resize((CHUNK_SIZE+1)**3)
+		edited.fill(0.0)
+
+	var edited_bytes = PackedFloat32Array(edited).to_byte_array()
+	rd.buffer_update(edited_buffer, 0, edited_bytes.size(), edited_bytes)
+	
+	var newtime1 := Time.get_ticks_usec()
+	
+	# Clear output buffer
+	rd.buffer_update(vertex_buffer, 0, dead_beef_arr.size(), dead_beef_arr)
+	
+	var compute_list = rd.compute_list_begin()
+	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
+	rd.compute_list_bind_uniform_set(compute_list, buffer_set, 0)
+	rd.compute_list_dispatch(compute_list, 4, 4, 4)
+	rd.compute_list_end()
+	
+	# GENERATE VERTEIES ON GPU
+	rd.submit()
+	rd.sync()
+	
+	var newtime2 := Time.get_ticks_usec()
+	
+	var ver_bytes = rd.buffer_get_data(vertex_buffer)
+	var vertex_output = ver_bytes.to_float32_array()
+	
+	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
+	
+	# don't generate mesh if it's empty
+	if !vertex_output.is_empty():
+		generate_mesh(vertex_output, coord)
+	
+	#var end := Time.get_ticks_usec()
+	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
+	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
+	#print("time to generate mesh cpu: ", (end - newtime2) / 1000000.0)
+	#print("Total time ", (end - time) / 1000000.0)
