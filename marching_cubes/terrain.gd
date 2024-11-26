@@ -1,8 +1,11 @@
 extends Node3D
 
 @export var CHUNK_SIZE := 32 # number of cubes in a chunk 
-@export var RENDER_DISTANCE := 8 # in chunks
-@export var VERTICAL_RENDER_DISTANCE := 4
+@export var RENDER_DISTANCE := 4 # in chunks
+@export var VERTICAL_RENDER_DISTANCE := 5
+@export var LOD2_DISTANCE := 8
+@export var LOD4_DISTANCE := 12
+@export var LOD8_DISTANCE := 20
 @export var threshold := 0.1
 
 var marcher: Marcher = GpuMarcher.new(self, CHUNK_SIZE, threshold)
@@ -48,61 +51,75 @@ func duplicate_2d(arr: Array):
 
 func get_worker_thread() -> Thread:
 	for worker: Thread in worker_threads:
-		if !worker.is_alive() && worker.is_started():
+		if (!worker.is_alive() && worker.is_started()):
 			worker.wait_to_finish()
 			return worker
-	return null # just so that the compiler is happy about all paths returning
+		elif !worker.is_started():
+			return worker
+	return null
 
 @onready var chunk_time_label := $chunk_time
 
-func show_chunk(coord: Vector3i, thread: Thread) -> bool:
+func show_chunk(coord: Vector3i, lod: int, thread: Thread) -> bool:
 	var edited = []
 	if edited_chunks.has(coord):
 		edited = edited_chunks[coord]
 	var start := Time.get_ticks_usec()
-	thread.start(marcher.march_chunk.bind(coord, duplicate_2d(TRIANGULATIONS), edited))
+	thread.start(marcher.march_chunk.bind(coord, lod, duplicate_2d(TRIANGULATIONS), edited))
 	var end := Time.get_ticks_usec()
-	chunk_time_label.set_text.call_deferred("chunk generation time: " + str((end - start) / 1000000.0))
+	chunk_time_label.set_text.call_deferred("chunk time: " + str((end - start) / 1000000.0) + "\nlod: " + str(lod))
 	return true
 
-func update_chunk(chunk_name: String, chunk):
+func update_chunk(chunk_name: String, chunk: MeshInstance3D):
 	# Remove chunk if it already exit
 	if chunk_name in chunks:
 		chunks[chunk_name].queue_free()
 	chunks[chunk_name] = chunk
 	add_child(chunk)
 
+func show_chunks_circle(offset: int, vertical_offset: int, player_chunk: Vector3i, lod: int, thread: Thread):
+	for dx in range(-offset, offset+1):
+		for dz in range(-vertical_offset, vertical_offset+1):
+			for dy in range(-offset, offset+1):
+				var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
+				marcher.loaded_mutex.lock()
+				var has_loaded = marcher.loaded_chunks.get(chunk_coord)
+				marcher.loaded_mutex.unlock()
+				if has_loaded != null && has_loaded <= lod:
+					continue
+
+				#print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
+				print("rendering with ", lod, " was ", has_loaded)
+				show_chunk(chunk_coord, lod, thread)
+				return true
+	return false
+
 func show_chunks_around_player(player_chunk: Vector3i) -> void:
-	var max_offset = floor(RENDER_DISTANCE/2)
+	var render_offset = floor(RENDER_DISTANCE/2)
+	var lod2_offset = floor(LOD2_DISTANCE/2)
+	var lod4_offset = floor(LOD4_DISTANCE/2)
+	var lod8_offset = floor(LOD8_DISTANCE/2)
+	var max_offset = max(render_offset, lod2_offset, lod4_offset, lod8_offset)
+	var vertical_offset = floor(VERTICAL_RENDER_DISTANCE/2)
 	
 	var thread := get_worker_thread()
 	if thread == null:
 		return
 	
 	for offset in range(0, max_offset + 1):
-		for dx in range(-offset, offset+1):
-			for dz in range(-offset, offset+1):
-				for dy in range(-offset, offset+1):
-					if dy == max_offset:
-						continue
-					
-					#global_player_chunk_mutex.lock()
-					#var global_chunk = Vector3i(global_player_chunk)
-					#global_player_chunk_mutex.unlock()
-					#player has moved, restart
-					#if(player_chunk != global_chunk):
-						#print("player moved chunk")
-						#return
-					
-					var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
-					marcher.loaded_mutex.lock()
-					var has_loaded = marcher.loaded_chunks.has(chunk_coord)
-					marcher.loaded_mutex.unlock()
-					if has_loaded:
-						continue
-					#print("Player chunk: " , player_chunk , " Current chunk: " , chunk_coord , " x,y,z: " ,dx ,",", dy ,",", dz)
-					show_chunk(chunk_coord, thread)
-					return
+		if offset >= lod4_offset && offset <= lod8_offset:
+			if show_chunks_circle(offset, vertical_offset, player_chunk, 8, thread):
+				return
+		if offset >= lod2_offset && offset <= lod4_offset:
+			if show_chunks_circle(offset, vertical_offset, player_chunk, 4, thread):
+				return
+		if offset >= render_offset && offset <= lod2_offset:
+			if show_chunks_circle(offset, vertical_offset, player_chunk, 2, thread):
+				return
+		if offset <= render_offset:
+			if show_chunks_circle(offset, vertical_offset, player_chunk, 1, thread):
+				return
+
 
 func edit_terrain(coord: Vector3, radius: float, power: float) -> void:
 	# Might not work for radius bigger then chunk_size

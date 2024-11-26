@@ -282,7 +282,7 @@ const int triTable[256][16] = {
 // Marcher
 
 // Invocations in the (x, y, z) dimension
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 layout(set = 0, binding = 0, std430) restrict buffer NoiseFloatBuffer {
     float noise[];
@@ -305,13 +305,18 @@ layout(set = 0, binding = 3, std430) coherent buffer Size
 	int size;
 };
 
+layout(set = 0, binding = 5, std430) coherent buffer Lod
+{
+	int lod;
+};
+
 layout(set = 0, binding = 4, std430) coherent buffer Threshold 
 {
 	float threshold;
 };
 
 float getAt(vec3 pos) {
-    int size_pad = size + 1;
+    int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
     return noise_buffer.noise[idx] + edit_buffer.edited[idx];
 }
@@ -325,6 +330,7 @@ vec3 interp(vec3 edgeVertex1, float valueAtVertex1, vec3 edgeVertex2, float valu
 void main() {
 
     vec3 pos =  gl_GlobalInvocationID;
+    int lod_size = size/lod;
 
     float noiseResult[8] = {
         getAt(pos + cornerOffsets[0]),
@@ -361,15 +367,15 @@ void main() {
         int e20 = edgeConnections[edges[i + 2]][0];
         int e21 = edgeConnections[edges[i + 2]][1];
 
-        vec3 p1 = interp(cornerOffsets[e00], noiseResult[e00], cornerOffsets[e01], noiseResult[e01]) + pos;
-        vec3 p2 = interp(cornerOffsets[e10], noiseResult[e10], cornerOffsets[e11], noiseResult[e11]) + pos;
-        vec3 p3 = interp(cornerOffsets[e20], noiseResult[e20], cornerOffsets[e21], noiseResult[e21]) + pos;
+        vec3 p1 = lod * (interp(cornerOffsets[e00], noiseResult[e00], cornerOffsets[e01], noiseResult[e01]) + pos);
+        vec3 p2 = lod * (interp(cornerOffsets[e10], noiseResult[e10], cornerOffsets[e11], noiseResult[e11]) + pos);
+        vec3 p3 = lod * (interp(cornerOffsets[e20], noiseResult[e20], cornerOffsets[e21], noiseResult[e21]) + pos);
 
-        //vec3 p1 = cornerOffsets[e00] + pos;
-        //vec3 p2 = cornerOffsets[e10] + pos;
-        //vec3 p3 = cornerOffsets[e20] + pos;
+        // vec3 p1 = ((cornerOffsets[e00] + cornerOffsets[e01]) / 2 + pos) * lod;
+        // vec3 p2 = ((cornerOffsets[e10] + cornerOffsets[e11]) / 2 + pos) * lod;
+        // vec3 p3 = ((cornerOffsets[e20] + cornerOffsets[e21]) / 2 + pos) * lod;
 
-        uint idx = int(int(pos.z) + int(pos.y) * size + int(pos.x) * size * size)*45 + i*3;
+        uint idx = int(int(pos.z) + int(pos.y) * lod_size + int(pos.x) * lod_size * lod_size)*45 + i*3;
 
         vertex_buffer.data[idx] = p1.x;
         vertex_buffer.data[idx+1] = p1.y;

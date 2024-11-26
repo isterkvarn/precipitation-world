@@ -37,11 +37,11 @@ func get_at(coord) -> float:
 	noise = clampf(noise, -1.0, 1.0)
 	return noise
 
-func get_terrain_3d(width: int, height: int, depth: int, position: Vector3i):
+func get_terrain_3d(lod: int, width: int, height: int, depth: int, position: Vector3i):
 	var noise_3d := []
-	for x in range(width):
-		for y in range(height):
-			for z in range(depth):
+	for x in range(0, width, lod):
+		for y in range(0, height, lod):
+			for z in range(0, depth, lod):
 				noise_3d.append(get_at(position + Vector3i(x, y, z)))
 	return noise_3d
 	

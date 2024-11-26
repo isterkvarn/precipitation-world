@@ -8,6 +8,7 @@ var edited_buffer : RID
 var vertex_buffer : RID
 var buffer_set : RID
 var size_buffer : RID
+var lod_buffer : RID
 var threshold_buffer : RID
 var pipeline : RID
 
@@ -58,6 +59,15 @@ func init() -> void:
 	size_uniform.binding = 3
 	size_uniform.add_id(size_buffer)
 	
+	# create buffer for lod
+	var lod = [1]
+	var lod_bytes = PackedInt32Array(lod).to_byte_array()
+	lod_buffer = rd.storage_buffer_create(lod_bytes.size(), lod_bytes)
+	var lod_uniform = RDUniform.new()
+	lod_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	lod_uniform.binding = 5
+	lod_uniform.add_id(lod_buffer)
+	
 	# create buffer for threshold
 	var threshold_array = [threshold]
 	var threshold_bytes = PackedFloat32Array(threshold_array).to_byte_array()
@@ -67,7 +77,7 @@ func init() -> void:
 	threshold_uniform.binding = 4
 	threshold_uniform.add_id(threshold_buffer)
 	
-	var buffers = [n_uniform, e_uniform, v_uniform, size_uniform, threshold_uniform]
+	var buffers = [n_uniform, e_uniform, v_uniform, size_uniform, lod_uniform, threshold_uniform]
 	buffer_set = rd.uniform_set_create(buffers, shader, 0)
 	pipeline = rd.compute_pipeline_create(shader)
 	rd_mutex.unlock()
@@ -75,9 +85,8 @@ func init() -> void:
 	print("done init for shader")
 	
 	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
-func generate_mesh(vertex_output, coord):
-	
-	var marched = march_meshInstance()
+func generate_mesh(vertex_output, coord, lod: int):
+	var marched := march_meshInstance()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	
@@ -101,8 +110,8 @@ func generate_mesh(vertex_output, coord):
 							  vertex_output[ver_index+7],
 							  vertex_output[ver_index+8])
 		
-		if vertex1.distance_to(vertex2) > 2.0 or vertex1.distance_to(vertex3) > 2.0 or vertex2.distance_to(vertex3) > 2.0:
-			print("polygon :", vertex1, ", ", vertex2, ", ", vertex3)
+		#if vertex1.distance_to(vertex2) > 2.0 or vertex1.distance_to(vertex3) > 2.0 or vertex2.distance_to(vertex3) > 2.0:
+			#print("polygon :", vertex1, ", ", vertex2, ", ", vertex3)
 		st.add_vertex(vertex1)
 		st.add_vertex(vertex2)
 		st.add_vertex(vertex3)
@@ -118,7 +127,7 @@ func generate_mesh(vertex_output, coord):
 	marched.mesh = mesh
 	
 	# generate collison for mesh
-	if mesh.get_surface_count() > 0:
+	if lod == 1 && mesh.get_surface_count() > 0:
 		marched.create_trimesh_collision()
 	# make sure collsision is detected on backside since collision orientation is wrong
 	# kinda ugly way to access collision shape but is works
@@ -135,14 +144,14 @@ func generate_mesh(vertex_output, coord):
 	#print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
 	#print("Total time ", (newtime4 - time) / 1000000.0)
 
-func march_chunk(coord: Vector3i, TRI, edited) -> void:
+func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	var time = Time.get_ticks_usec()
 	
 	loaded_mutex.lock()
-	loaded_chunks[coord] = 1.
+	loaded_chunks[coord] = lod
 	loaded_mutex.unlock()
 	
-	var terrain_noise = terrain_generator.get_terrain_3d(CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
+	var terrain_noise = terrain_generator.get_terrain_3d(lod, CHUNK_SIZE+1, CHUNK_SIZE+1, CHUNK_SIZE+1, coord*CHUNK_SIZE)
 	var terrain_bytes = PackedFloat32Array(terrain_noise).to_byte_array()
 	
 	# Update with chunk noise
@@ -158,6 +167,10 @@ func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	
 	rd.buffer_update(edited_buffer, 0, edited_bytes.size(), edited_bytes)
 	
+	# update lod
+	var lod_bytes = PackedInt32Array([lod]).to_byte_array()
+	rd.buffer_update(lod_buffer, 0, lod_bytes.size(), lod_bytes)
+	
 	var newtime1 := Time.get_ticks_usec()
 	
 	# Clear output buffer
@@ -166,7 +179,7 @@ func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, buffer_set, 0)
-	rd.compute_list_dispatch(compute_list, 4, 4, 4)
+	rd.compute_list_dispatch(compute_list, 8/lod, 8/lod, 8/lod)
 	rd.compute_list_end()
 	
 	# GENERATE VERTEIES ON GPU
@@ -184,7 +197,7 @@ func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	
 	# don't generate mesh if it's empty
 	if !vertex_output.is_empty():
-		generate_mesh(vertex_output, coord)
+		generate_mesh(vertex_output, coord, lod)
 		
 	
 	#var end := Time.get_ticks_usec()
