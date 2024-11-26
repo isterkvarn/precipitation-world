@@ -136,6 +136,7 @@ func generate_mesh(vertex_output, coord):
 	#print("Total time ", (newtime4 - time) / 1000000.0)
 
 func march_chunk(coord: Vector3i, TRI, edited) -> void:
+	rd_mutex.lock()
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
@@ -175,11 +176,14 @@ func march_chunk(coord: Vector3i, TRI, edited) -> void:
 	var ver_bytes = rd.buffer_get_data(vertex_buffer)
 	var vertex_output = ver_bytes.to_float32_array()
 	
+	rd_mutex.unlock()
+	
 	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
 	
 	# don't generate mesh if it's empty
 	if !vertex_output.is_empty():
 		generate_mesh(vertex_output, coord)
+		
 	
 	#var end := Time.get_ticks_usec()
 	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
