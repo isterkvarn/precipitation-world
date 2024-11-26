@@ -70,17 +70,24 @@ func show_chunk(coord: Vector3i, lod: int, thread: Thread) -> bool:
 	chunk_time_label.set_text.call_deferred("chunk time: " + str((end - start) / 1000000.0) + "\nlod: " + str(lod))
 	return true
 
-func update_chunk(chunk_name: String, chunk: MeshInstance3D):
-	# Remove chunk if it already exit
+func replace_chunk(chunk_name: String, chunk: MeshInstance3D):
 	if chunk_name in chunks:
 		chunks[chunk_name].queue_free()
 	chunks[chunk_name] = chunk
+
+func update_chunk(chunk_name: String, chunk: MeshInstance3D):
+	# Remove chunk if it already exit
 	add_child(chunk)
+	
+	var tween := create_tween()
+	tween.tween_property(chunk, "position", chunk.position, 0.3).from(chunk.position + 100 * Vector3.DOWN)
+	tween.tween_callback(replace_chunk.bind(chunk_name, chunk))
+
 
 func show_chunks_circle(offset: int, vertical_offset: int, player_chunk: Vector3i, lod: int, thread: Thread):
 	for dx in range(-offset, offset+1):
-		for dz in range(-vertical_offset, vertical_offset+1):
-			for dy in range(-offset, offset+1):
+		for dz in range(-offset, offset+1):
+			for dy in range(-vertical_offset, vertical_offset+1):
 				var chunk_coord := player_chunk + Vector3i(dx, dy, dz)
 				marcher.loaded_mutex.lock()
 				var has_loaded = marcher.loaded_chunks.get(chunk_coord)
