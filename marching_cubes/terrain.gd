@@ -148,7 +148,7 @@ func check_player_inputs() -> void:
 	var shoot_ray : RayCast3D = %Player.get_shootray()
 	
 	if Input.is_action_just_pressed("explosion") and shoot_ray.is_colliding():
-		edit_terrain(shoot_ray.get_collision_point(), 16, 100)
+		edit_terrain(shoot_ray.get_collision_point(), 6, 100)
 		
 	if Input.is_action_just_pressed("build") and shoot_ray.is_colliding():
 		edit_terrain(shoot_ray.get_collision_point(), 8, -100)
