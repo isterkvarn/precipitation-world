@@ -361,6 +361,18 @@ float perlin_noise(vec2 pos, int period, float freq, float seed) {
     return lerp(u, lerp(v, dot_three, dot_one), lerp(v, dot_four, dot_two)) / period;
 }
 
+float perlin_noise_3d(vec3 pos, int period, float freq, float seed) {
+    vec3 glob_pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])) + vec3(freq, freq, freq);
+
+    int limit = int(glob_pos.y - mod(glob_pos.y, period));
+
+    float perlin_x = perlin_noise(vec2(pos.x, pos.z), period, freq, seed + limit/period);
+    float perlin_z = perlin_noise(vec2(pos.x, pos.z), period, freq, seed + (limit + period)/period);
+
+    float transition = fade((glob_pos.y - limit)/period);
+    return lerp(transition, perlin_x, perlin_z) / period; 
+}
+
 float getAt(vec3 pos) {
     int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
@@ -371,7 +383,10 @@ float getAt(vec3 pos) {
     rnd_num += perlin_noise(vec2(pos.x, pos.z), size/5, 0.1, 22.5) * 1; 
 
     float ground = max(min(position_buffer.pos[1] * size + pos.y + rnd_num, 1.0), -1.0);
-    return ground + edit_buffer.edited[idx];
+    float cave = perlin_noise_3d(pos, size, 0.0, 22.5);
+
+
+    return clamp(cave + edit_buffer.edited[idx], -1.0, 1.0);
 }
 
 
