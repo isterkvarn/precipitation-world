@@ -95,7 +95,6 @@ func generate_mesh(vertex_output, coord, lod: int):
 	#for i in range(8):
 		#print(vertex_output[i])
 	#print(count_output)
-
 	# ADD ALL VERTECIES TO st
 	for ver_index in range(0, vertex_output.size(), 9):
 		

@@ -314,10 +314,63 @@ layout(set = 0, binding = 4, std430) coherent buffer Threshold
 
 // Noise
 
+float large_rnd_num = 43563.3458793;
+
+float psudeo_random_vec2(vec2 pos, float seed) {
+    
+    return 1.0 - 2.0 * fract(sin(dot(pos.xy, vec2(seed, 66.42213))) * large_rnd_num);
+}
+
+float fade(float t){
+    return ((6*t - 15)*t + 10)*t*t*t;
+}
+
+float lerp(float t, float a1, float a2){
+    return a1 + t*(a2-a1);
+}
+
+float perlin_noise(vec2 pos, int period, float freq, float seed) {
+
+    pos = (pos + size * vec2(position_buffer.pos[0], position_buffer.pos[2])); // + vec2(freq, freq);
+
+    int bot = int(pos.y - mod(pos.y, period));
+    int top = bot + period;
+
+    int left = int(pos.x - mod(pos.x, period));
+    int right = left + period;
+
+    vec2 corner_one = vec2(left, top);
+    vec2 corner_two = vec2(right, top);
+    vec2 corner_three = vec2(left, bot);
+    vec2 corner_four = vec2(right, bot);
+
+    // Some magic numbers so each vector component is diffrent
+    vec2 vec_one = normalize(vec2(psudeo_random_vec2(corner_one / period, seed + 14.45), psudeo_random_vec2(corner_one / period, seed + 5.789)));
+    vec2 vec_two = normalize(vec2(psudeo_random_vec2(corner_two / period, seed + 14.45), psudeo_random_vec2(corner_two / period, seed + 5.789)));
+    vec2 vec_three = normalize(vec2(psudeo_random_vec2(corner_three / period, seed + 14.45), psudeo_random_vec2(corner_three / period, seed + 5.789)));
+    vec2 vec_four = normalize(vec2(psudeo_random_vec2(corner_four / period, seed + 14.45), psudeo_random_vec2(corner_four / period, seed + 5.789)));
+
+    float dot_one = dot(vec_one, corner_one - pos);
+    float dot_two = dot(vec_two, corner_two - pos);
+    float dot_three = dot(vec_three, corner_three - pos);
+    float dot_four = dot(vec_four, corner_four - pos);
+
+    float u = fade((pos.x - left)/period);
+    float v = fade((pos.y - bot)/period);
+
+    return lerp(u, lerp(v, dot_three, dot_one), lerp(v, dot_four, dot_two)) / period;
+}
+
 float getAt(vec3 pos) {
     int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
-    float ground = max(min(position_buffer.pos[1] * size + pos.y, 1.0), -1.0);
+
+    float rnd_num = perlin_noise(vec2(pos.x, pos.z), size*32, 0.1, 22.5) * 200; 
+    rnd_num += perlin_noise(vec2(pos.x, pos.z), size*4, 0.1, 22.5) * 63; 
+    rnd_num += perlin_noise(vec2(pos.x, pos.z), size, 0.1, 22.5) * 18; 
+    rnd_num += perlin_noise(vec2(pos.x, pos.z), size/5, 0.1, 22.5) * 1; 
+
+    float ground = max(min(position_buffer.pos[1] * size + pos.y + rnd_num, 1.0), -1.0);
     return ground + edit_buffer.edited[idx];
 }
 
