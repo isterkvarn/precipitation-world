@@ -379,7 +379,11 @@ float getAt(vec3 pos) {
 
     float noise = 0;
 
-    noise += max(6 * perlin_noise_3d(pos, 50, 0.0, 22.5), 0.0);
+    float cave = max(6 * perlin_noise_3d(pos, 50, 0.0, 22.5), 0.0);
+    cave += max(2 * perlin_noise_3d(pos, 16, 0.0, 42.5), 0.0);
+    cave += max(0.2 * perlin_noise_3d(pos, 3, 0.0, 26.5), 0.0);
+
+    noise += cave;
 
     float rnd_num = perlin_noise(vec2(pos.x, pos.z), size*32, 0.1, 22.5) * 200; 
     rnd_num += perlin_noise(vec2(pos.x, pos.z), size*4, 0.1, 22.5) * 63; 
