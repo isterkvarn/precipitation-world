@@ -376,23 +376,34 @@ float perlin_noise_3d(vec3 pos, int period, float freq, float seed) {
 float getAt(vec3 pos) {
     int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
+    float height = position_buffer.pos[1] * size + pos.y;
 
     float noise = 0;
 
     float cave = max(6 * perlin_noise_3d(pos, 50, 0.0, 22.5), 0.0);
-    cave += max(2 * perlin_noise_3d(pos, 16, 0.0, 42.5), 0.0);
+    cave += max(3 * perlin_noise_3d(pos, 16, 0.0, 42.5), 0.0);
+    cave += max(0.3 * perlin_noise_3d(pos, 5, 0.0, 42.5), 0.0);
     cave += max(0.2 * perlin_noise_3d(pos, 3, 0.0, 26.5), 0.0);
 
     noise += cave;
 
-    float rnd_num = perlin_noise(vec2(pos.x, pos.z), size*32, 0.1, 22.5) * 200; 
-    rnd_num += perlin_noise(vec2(pos.x, pos.z), size*4, 0.1, 22.5) * 63; 
-    rnd_num += perlin_noise(vec2(pos.x, pos.z), size, 0.1, 22.5) * 18; 
-    rnd_num += perlin_noise(vec2(pos.x, pos.z), size/5, 0.1, 22.5) * 1; 
+    float ground = perlin_noise(vec2(pos.x, pos.z), size*32, 0.1, 22.5) * 200; 
+    ground += perlin_noise(vec2(pos.x, pos.z), size*4, 0.1, 22.5) * 63; 
+    ground += perlin_noise(vec2(pos.x, pos.z), size, 0.1, 22.5) * 18; 
+    ground += perlin_noise(vec2(pos.x, pos.z), size/5, 0.1, 22.5) * 1; 
 
-    float ground = clamp(position_buffer.pos[1] * size + pos.y + rnd_num, -1.0, 1.0);
+    ground = clamp(height + ground, -1.0, 1.0);
 
     noise += ground;
+
+    if (ground > 0.1){
+
+        float boulder = 0.8 * perlin_noise_3d(pos, 25, 0.0, 22.5);
+        boulder += 0.05 * perlin_noise_3d(pos, 5, 0.0, 42.5);
+        boulder += 0.01 * perlin_noise_3d(pos, 3, 0.0, 26.5);
+        noise += clamp(4 - 0.5 * height, -1.0, 5.0) * clamp(boulder, -1.0, 1.0);
+    }
+
 
     return clamp(noise + edit_buffer.edited[idx], -1.0, 1.0);
 }
