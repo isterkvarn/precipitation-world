@@ -329,15 +329,15 @@ float lerp(float t, float a1, float a2){
     return a1 + t*(a2-a1);
 }
 
-float perlin_noise(vec2 pos, int period, float freq, float seed) {
+float perlin_noise(vec2 pos, float period, float freq, float seed) {
 
     pos = (pos + size * vec2(position_buffer.pos[0], position_buffer.pos[2])); // + vec2(freq, freq);
 
-    int bot = int(pos.y - mod(pos.y, period));
-    int top = bot + period;
+    float bot = pos.y - mod(pos.y, period);
+    float top = bot + period;
 
-    int left = int(pos.x - mod(pos.x, period));
-    int right = left + period;
+    float left = pos.x - mod(pos.x, period);
+    float right = left + period;
 
     vec2 corner_one = vec2(left, top);
     vec2 corner_two = vec2(right, top);
@@ -361,7 +361,7 @@ float perlin_noise(vec2 pos, int period, float freq, float seed) {
     return lerp(u, lerp(v, dot_three, dot_one), lerp(v, dot_four, dot_two)) / period;
 }
 
-float perlin_noise_3d(vec3 pos, int period, float freq, float seed) {
+float perlin_noise_3d(vec3 pos, float period, float freq, float seed) {
     vec3 glob_pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])) + vec3(freq, freq, freq);
 
     int limit = int(glob_pos.y - mod(glob_pos.y, period));

@@ -178,11 +178,13 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	rd.compute_list_dispatch(compute_list, 8/lod, 8/lod, 8/lod)
 	rd.compute_list_end()
 	
+	var newtime1 = Time.get_ticks_usec()
+	
 	# GENERATE VERTEIES ON GPU
 	rd.submit()
 	rd.sync()
 	
-	var newtime1 := Time.get_ticks_usec()
+	var newtime2 := Time.get_ticks_usec()
 	
 	
 	var ver_bytes = rd.buffer_get_data(vertex_buffer)
@@ -194,12 +196,14 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	
 	# don't generate mesh if it's empty
 	
+	# TODO: This doesnt work since vertex_output is always filled
 	if !vertex_output.is_empty():
 		generate_mesh(vertex_output, coord, lod)
 		
-	var newtime2 := Time.get_ticks_usec()
+	var newtime3 := Time.get_ticks_usec()
 	
-	#var end := Time.get_ticks_usec()
-	print("time to generate polygons gpu: ", (newtime1 - time) / 1000000.0)
-	print("time to generate mesh cpu: ", (newtime2 - newtime1) / 1000000.0)
-	print("Total time ", (newtime2 - time) / 1000000.0)
+	var end := Time.get_ticks_usec()
+	print("time to set-up: ", (newtime1 - time) / 1000000.0)
+	print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
+	print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
+	print("Total time ", (end - time) / 1000000.0)
