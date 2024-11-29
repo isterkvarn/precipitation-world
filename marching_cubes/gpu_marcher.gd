@@ -7,6 +7,7 @@ var edited_buffer : RID
 var vertex_buffer : RID
 var buffer_set : RID
 var size_buffer : RID
+var is_empty_buffer : RID
 var pos_buffer : RID
 var lod_buffer : RID
 var threshold_buffer : RID
@@ -79,7 +80,16 @@ func init() -> void:
 	threshold_uniform.binding = 4
 	threshold_uniform.add_id(threshold_buffer)
 	
-	var buffers = [pos_uniform, e_uniform, v_uniform, size_uniform, lod_uniform, threshold_uniform]
+	# create buffer for is_empty
+	var empty_array = [0]
+	var is_empty_bytes = PackedFloat32Array(empty_array).to_byte_array()
+	is_empty_buffer = rd.storage_buffer_create(is_empty_bytes.size(), is_empty_bytes)
+	var is_empty_uniform = RDUniform.new()
+	is_empty_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	is_empty_uniform.binding = 6
+	is_empty_uniform.add_id(is_empty_buffer)
+	
+	var buffers = [is_empty_uniform, pos_uniform, e_uniform, v_uniform, size_uniform, lod_uniform, threshold_uniform]
 	buffer_set = rd.uniform_set_create(buffers, shader, 0)
 	pipeline = rd.compute_pipeline_create(shader)
 	rd_mutex.unlock()
@@ -156,21 +166,29 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	if edited.is_empty():
 		edited.resize((CHUNK_SIZE+1)**3)
 		edited.fill(0.0)
+		
 	var edited_bytes = PackedFloat32Array(edited).to_byte_array()
+	
+	var test_time = Time.get_ticks_usec()
+	
+	var pos_bytes = PackedFloat32Array([coord.x, coord.y, coord.z]).to_byte_array()
+	var lod_bytes = PackedInt32Array([lod]).to_byte_array()
+	var is_empty = PackedInt32Array([0]).to_byte_array()
 	
 	rd_mutex.lock()
 	
 	rd.buffer_update(edited_buffer, 0, edited_bytes.size(), edited_bytes)
 	
-	var pos_bytes = PackedFloat32Array([coord.x, coord.y, coord.z]).to_byte_array()
 	rd.buffer_update(pos_buffer, 0, pos_bytes.size(), pos_bytes)
 	
 	# update lod
-	var lod_bytes = PackedInt32Array([lod]).to_byte_array()
 	rd.buffer_update(lod_buffer, 0, lod_bytes.size(), lod_bytes)
 	
 	# Clear output buffer
 	rd.buffer_update(vertex_buffer, 0, dead_beef_arr.size(), dead_beef_arr)
+	
+	# Clear is empty buffer
+	rd.buffer_update(is_empty_buffer, 0, is_empty.size(), is_empty)
 	
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
@@ -188,22 +206,26 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	
 	
 	var ver_bytes = rd.buffer_get_data(vertex_buffer)
+	var is_empty_bytes = rd.buffer_get_data(is_empty_buffer)
 	rd_mutex.unlock()
 	
 	var vertex_output = ver_bytes.to_float32_array()
+	var is_empty_output = is_empty_bytes.to_int32_array()
 	
 	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
 	
 	# don't generate mesh if it's empty
 	
-	# TODO: This doesnt work since vertex_output is always filled
-	if !vertex_output.is_empty():
+	# Check if there is something in buffer, dont want to waste time on air
+	var not_empty = is_empty_output[0] != 0
+	if not_empty:
 		generate_mesh(vertex_output, coord, lod)
 		
 	var newtime3 := Time.get_ticks_usec()
 	
 	var end := Time.get_ticks_usec()
+	#print("time to test: ", (test_time - time) / 1000000.0)
 	print("time to set-up: ", (newtime1 - time) / 1000000.0)
 	print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
-	print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
+	print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0, ", empty: ", not not_empty)
 	print("Total time ", (end - time) / 1000000.0)

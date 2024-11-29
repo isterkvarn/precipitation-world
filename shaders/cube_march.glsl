@@ -311,6 +311,11 @@ layout(set = 0, binding = 4, std430) coherent buffer Threshold
 	float threshold;
 };
 
+layout(set = 0, binding = 6, std430) coherent buffer IsEmpty 
+{
+	int is_empty;
+};
+
 
 // Noise
 
@@ -330,8 +335,6 @@ float lerp(float t, float a1, float a2){
 }
 
 float perlin_noise(vec2 pos, float period, float freq, float seed) {
-
-    pos = (pos + size * vec2(position_buffer.pos[0], position_buffer.pos[2])); // + vec2(freq, freq);
 
     float bot = pos.y - mod(pos.y, period);
     float top = bot + period;
@@ -362,50 +365,62 @@ float perlin_noise(vec2 pos, float period, float freq, float seed) {
 }
 
 float perlin_noise_3d(vec3 pos, float period, float freq, float seed) {
-    vec3 glob_pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])) + vec3(freq, freq, freq);
 
-    int limit = int(glob_pos.y - mod(glob_pos.y, period));
+    int limit = int(pos.z - mod(pos.z, period));
 
-    float perlin_x = perlin_noise(vec2(pos.x, pos.z), period, freq, seed + limit/period);
-    float perlin_z = perlin_noise(vec2(pos.x, pos.z), period, freq, seed + (limit + period)/period);
+    float perlin_x = perlin_noise(vec2(pos.x, pos.y), period, freq, seed + limit/period);
+    float perlin_y = perlin_noise(vec2(pos.x, pos.y), period, freq, seed + limit/period + 1);
 
-    float transition = fade((glob_pos.y - limit)/period);
-    return lerp(transition, perlin_x, perlin_z); 
+    float transition = fade((pos.z - limit)/period);
+    return lerp(transition, perlin_x, perlin_y); 
 }
 
 float getAt(vec3 pos) {
     int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
     float height = position_buffer.pos[1] * size + pos.y;
+    pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])); //+ vec3(freq, freq, freq);
 
     float noise = 0;
 
-    float cave = max(6 * perlin_noise_3d(pos, 50, 0.0, 22.5), 0.0);
-    cave += max(3 * perlin_noise_3d(pos, 16, 0.0, 42.5), 0.0);
-    cave += max(0.3 * perlin_noise_3d(pos, 5, 0.0, 42.5), 0.0);
-    cave += max(0.2 * perlin_noise_3d(pos, 3, 0.0, 26.5), 0.0);
+    float cave = max(5 * perlin_noise_3d(pos, 50, 0.0, 22.5), 0.0);
+    cave += max(3.5 * perlin_noise_3d(pos, 16, 0.0, 42.5), 0.0);
+    cave += max(0.5 * perlin_noise_3d(pos, 5, 0.0, 42.5), 0.0);
 
     noise += cave;
 
-    float ground = perlin_noise(vec2(pos.x, pos.z), size*32, 0.1, 22.5) * 200; 
-    ground += perlin_noise(vec2(pos.x, pos.z), size*4, 0.1, 22.5) * 63; 
-    ground += perlin_noise(vec2(pos.x, pos.z), size, 0.1, 22.5) * 18; 
-    ground += perlin_noise(vec2(pos.x, pos.z), size/5, 0.1, 22.5) * 1; 
+    float ground = perlin_noise(vec2(pos.x, pos.z), 32*32, 0.1, 22.5) * 200; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32*4, 0.1, 22.5) * 63; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32, 0.1, 22.5) * 18; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32/5, 0.1, 22.5) * 1; 
 
     ground = clamp(height + ground, -1.0, 1.0);
 
     noise += ground;
 
-    if (ground > 0.1){
+    //if (ground > 0.1){
 
-        float boulder = 0.8 * perlin_noise_3d(pos, 25, 0.0, 22.5);
-        boulder += 0.05 * perlin_noise_3d(pos, 5, 0.0, 42.5);
-        boulder += 0.01 * perlin_noise_3d(pos, 3, 0.0, 26.5);
-        noise += clamp(4 - 0.5 * height, -1.0, 5.0) * clamp(boulder, -1.0, 1.0);
-    }
+    //    float boulder = 0.8 * perlin_noise_3d(pos, 25, 0.0, 22.5);
+    //    boulder += 0.05 * perlin_noise_3d(pos, 5, 0.0, 42.5);
+    //    boulder += 0.01 * perlin_noise_3d(pos, 3, 0.0, 26.5);
+    //    noise += clamp(4 - 0.5 * height, -1.0, 5.0) * clamp(boulder, -1.0, 1.0);
+    //}
 
 
     return clamp(noise + edit_buffer.edited[idx], -1.0, 1.0);
+}
+
+float getAtt(vec3 pos) {
+   int size_pad = size/lod + 1;
+   int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
+   pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])); //+ vec3(freq, freq, freq);
+   //float height = position_buffer.pos[1] * size + pos.y;
+   float noise = perlin_noise_3d(pos, size*2, 0.1, 24.22) * size * 2;
+   //noise += 0.2 * perlin_noise(vec2(pos.x, pos.z), size*1.5, 0.1, 24.22) * size * 2;
+   //noise += 0.01 * perlin_noise(vec2(pos.x, pos.z), size*0.1, 0.1, 24.22) * size * 2;
+   //noise = clamp(height + noise, -1.0, 1.0);
+
+   return clamp(noise + edit_buffer.edited[idx], -1.0, 1.0);
 }
 
 
@@ -478,6 +493,9 @@ void main() {
         vertex_buffer.data[idx+6] = p3.x;
         vertex_buffer.data[idx+7] = p3.y;
         vertex_buffer.data[idx+8] = p3.z;
+
+        // Set so we know that buffer isnt empty
+        is_empty = 1;
     }
 
 
