@@ -311,6 +311,12 @@ layout(set = 0, binding = 4, std430) coherent buffer Threshold
 	float threshold;
 };
 
+layout(set = 0, binding = 7, std430) coherent buffer Seed 
+{
+	float seed;
+}
+seed_buffer;
+
 layout(set = 0, binding = 6, std430) coherent buffer IsEmpty 
 {
 	int is_empty;
@@ -376,6 +382,7 @@ float perlin_noise_3d(vec3 pos, float period, float freq, float seed) {
 }
 
 float getAt(vec3 pos) {
+    float seed = seed_buffer.seed;
     int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
     float height = position_buffer.pos[1] * size + pos.y;
@@ -383,16 +390,16 @@ float getAt(vec3 pos) {
 
     float noise = 0;
 
-    float cave = max(5 * perlin_noise_3d(pos, 50, 0.0, 22.5), 0.0);
-    cave += max(3.5 * perlin_noise_3d(pos, 16, 0.0, 42.5), 0.0);
-    cave += max(0.5 * perlin_noise_3d(pos, 5, 0.0, 42.5), 0.0);
+    float cave = max(5 * perlin_noise_3d(pos, 50, 0.0, seed + 1.0), 0.0);
+    cave += max(3.5 * perlin_noise_3d(pos, 16, 0.0, seed + 1.1), 0.0);
+    cave += max(0.5 * perlin_noise_3d(pos, 5, 0.0, seed + 1.2), 0.0);
 
     noise += cave;
 
-    float ground = perlin_noise(vec2(pos.x, pos.z), 32*32, 0.1, 22.5) * 200; 
-    ground += perlin_noise(vec2(pos.x, pos.z), 32*4, 0.1, 22.5) * 63; 
-    ground += perlin_noise(vec2(pos.x, pos.z), 32, 0.1, 22.5) * 18; 
-    ground += perlin_noise(vec2(pos.x, pos.z), 32/5, 0.1, 22.5) * 1; 
+    float ground = perlin_noise(vec2(pos.x, pos.z), 32*32, 0.1, seed + 1.3) * 200; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32*4, 0.1, seed + 1.4) * 63; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32, 0.1, seed + 1.5) * 18; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32/5, 0.1, seed + 1.6) * 1; 
 
     ground = clamp(height + ground, -1.0, 1.0);
 
