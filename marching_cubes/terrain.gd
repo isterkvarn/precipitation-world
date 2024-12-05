@@ -1,11 +1,11 @@
 extends Node3D
 
 @export var CHUNK_SIZE := 32 # number of cubes in a chunk 
-@export var RENDER_DISTANCE := 4 # in chunks
-@export var VERTICAL_RENDER_DISTANCE := 5
-@export var LOD2_DISTANCE := 8
-@export var LOD4_DISTANCE := 12
-@export var LOD8_DISTANCE := 20
+@export var RENDER_DISTANCE := 6 # in chunks
+@export var VERTICAL_RENDER_DISTANCE := 6
+@export var LOD2_DISTANCE := 10
+@export var LOD4_DISTANCE := 18
+@export var LOD8_DISTANCE := 32
 @export var threshold := 0.1
 
 var marcher: Marcher = GpuMarcher.new(self, CHUNK_SIZE, threshold)
@@ -73,6 +73,7 @@ func show_chunk(coord: Vector3i, lod: int, thread: Thread) -> bool:
 	return true
 
 func replace_chunk(chunk_name: String, chunk: MeshInstance3D):
+	chunk.material_override.transparency = false
 	if chunk_name in chunks:
 		chunks[chunk_name].queue_free()
 	chunks[chunk_name] = chunk
@@ -82,7 +83,10 @@ func update_chunk(chunk_name: String, chunk: MeshInstance3D):
 	add_child(chunk)
 	
 	var tween := create_tween()
-	tween.tween_property(chunk, "position", chunk.position, 0.3).from(chunk.position + 100 * Vector3.DOWN)
+	chunk.material_override.transparency = true
+	print(chunk.material_override.albedo_color)
+	print(chunk.material_override.albedo_color.a)
+	tween.tween_property(chunk.material_override, "albedo_color:a", 1., 0.3).from(0.)
 	tween.tween_callback(replace_chunk.bind(chunk_name, chunk))
 
 
