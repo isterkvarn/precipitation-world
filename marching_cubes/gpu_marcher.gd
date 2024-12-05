@@ -144,8 +144,8 @@ func generate_mesh(vertex_output, coord, lod: int):
 	#print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
 	#print("Total time ", (newtime4 - time) / 1000000.0)
 
-func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
-	var time = Time.get_ticks_usec()
+func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> Array:
+	var start = Time.get_ticks_usec()
 	
 	loaded_mutex.lock()
 	loaded_chunks[coord] = lod
@@ -200,8 +200,9 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 		generate_mesh(vertex_output, coord, lod)
 		
 	
-	#var end := Time.get_ticks_usec()
+	var end := Time.get_ticks_usec()
 	#print("time to generate noise cpu: ", (newtime1 - time) / 1000000.0)
 	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
 	#print("time to generate mesh cpu: ", (end - newtime2) / 1000000.0)
 	#print("Total time ", (end - time) / 1000000.0)
+	return [(end - start) / 1000000.0, lod]

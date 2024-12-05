@@ -35,7 +35,7 @@ func _ready() -> void:
 	print("using ", num_threads, " threads ")
 	for x in range(num_threads):
 		worker_threads.append(Thread.new())
-		worker_threads[x].start(noop) # so that they all are "started"
+		#worker_threads[x].start(noop) # so that they all are "started"
 	chunk_thread.start(noop) # same here
 
 
@@ -49,25 +49,27 @@ func duplicate_2d(arr: Array):
 	#tock("time to duplicate") # very small
 	return ret
 
+@onready var chunk_time_label := $chunk_time
+
 func get_worker_thread() -> Thread:
 	for worker: Thread in worker_threads:
 		if (!worker.is_alive() && worker.is_started()):
-			worker.wait_to_finish()
+			var data = worker.wait_to_finish()
+			var time = data[0]
+			var lod = data[1]
+			chunk_time_label.set_text.call_deferred("chunk time: " + str(time) + "\nlod: " + str(lod))
+			
 			return worker
 		elif !worker.is_started():
 			return worker
 	return null
 
-@onready var chunk_time_label := $chunk_time
 
 func show_chunk(coord: Vector3i, lod: int, thread: Thread) -> bool:
 	var edited = []
 	if edited_chunks.has(coord):
 		edited = edited_chunks[coord]
-	var start := Time.get_ticks_usec()
 	thread.start(marcher.march_chunk.bind(coord, lod, duplicate_2d(TRIANGULATIONS), edited))
-	var end := Time.get_ticks_usec()
-	chunk_time_label.set_text.call_deferred("chunk time: " + str((end - start) / 1000000.0) + "\nlod: " + str(lod))
 	return true
 
 func replace_chunk(chunk_name: String, chunk: MeshInstance3D):

@@ -116,7 +116,9 @@ func march_animation(coord: Vector3i, TRI) -> void:
 	scene.remove_child(box)
 
 
-func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
+func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> Array:
+	var start := Time.get_ticks_usec()
+
 	loaded_mutex.lock()
 	loaded_chunks[coord] = 1.
 	loaded_mutex.unlock()
@@ -197,6 +199,9 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
 	print("time to generate terrain: ", (newtime3 - time) / 1000000.0)
 	print("time to generate vertex: ", (newtime1 - newtime3) / 1000000.0)
 	print("time to generate collision: ", (newtime2 - newtime1) / 1000000.0)
+	var end := Time.get_ticks_usec()
+	return [(end - start) / 1000000.0, lod]
+
 
 # nothing to initialize here. Is for gpu
 func init() -> void:

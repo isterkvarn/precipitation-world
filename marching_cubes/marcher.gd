@@ -39,5 +39,7 @@ func march_meshInstance() -> MeshInstance3D:
 func init() -> void:
 	print("init should never be called but be implemented by the extending class")
 
-func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> void:
+# returns compute time and lod
+func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> Array:
 	print("march_chunk should never be called but be implemented by the extending class")
+	return []
