@@ -27,16 +27,14 @@ spread = 5.0
 initial_velocity_min = 15.0
 initial_velocity_max = 15.0
 color = Color(0.694808, 0.798556, 0.852953, 1)
-collision_mode = 1
-collision_friction = 0.0
-collision_bounce = 0.0
+collision_mode = 2
 
-[sub_resource type="Curve" id="Curve_1yktc"]
+[sub_resource type="Curve" id="Curve_x38h8"]
 max_value = 0.1
 _data = [Vector2(0, 0.000433534), 0.0, 0.0, 0, 0, Vector2(0.0780142, 0.0605491), 0.380771, 0.380771, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 3
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pyn5n"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g7cgn"]
 transparency = 1
 cull_mode = 2
 shading_mode = 0
@@ -44,10 +42,10 @@ vertex_color_use_as_albedo = true
 use_particle_trails = true
 
 [sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_24ewq"]
-material = SubResource("StandardMaterial3D_pyn5n")
+material = SubResource("StandardMaterial3D_g7cgn")
 size = 0.4
 section_length = 0.1
-curve = SubResource("Curve_1yktc")
+curve = SubResource("Curve_x38h8")
 
 [node name="Node3D2" type="Node3D"]
 
@@ -75,7 +73,14 @@ offset_right = 40.0
 offset_bottom = 23.0
 script = ExtResource("6_aqckv")
 
-[node name="Rain" type="GPUParticles3D" parent="."]
+[node name="Node3D" type="Node3D" parent="."]
+
+[node name="GPUParticlesCollisionHeightField3D" type="GPUParticlesCollisionHeightField3D" parent="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 0)
+size = Vector3(20, 20, 20)
+follow_camera_enabled = true
+
+[node name="Rain" type="GPUParticles3D" parent="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.0368, 12.9617, -0.0165839)
 amount = 3000
 lifetime = 2.0
