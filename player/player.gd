@@ -9,6 +9,7 @@ const MAX_THRUST_LIGHT = 4
 
 @onready var rotation_helper = $RotationHelper
 @onready var thrust_light = $ThrustLight
+@onready var missile_spawn = $RotationHelper/MissileSpawn
 @export var enviroment: Environment = null
 
 func _ready() -> void:
@@ -62,3 +63,9 @@ func _input(event):
 		
 func get_shootray():
 	return $"RotationHelper/ShootRay"
+	
+func get_look_direction():
+	return (missile_spawn.global_position - rotation_helper.global_position).normalized()
+	
+func get_missile_spawn_point():
+	return missile_spawn.global_position

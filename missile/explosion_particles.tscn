@@ -1,0 +1,83 @@
+[gd_scene load_steps=8 format=3 uid="uid://n7de0tvc77qk"]
+
+[ext_resource type="Script" path="res://missile/explosion_particles.gd" id="1_6uyo2"]
+[ext_resource type="Material" uid="uid://ctd3t2h75k1wt" path="res://missile/preset_exp.tres" id="1_lf6qb"]
+[ext_resource type="Material" uid="uid://bkmb5le84nohp" path="res://missile/wider.tres" id="2_ci64q"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ukj0h"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+
+[sub_resource type="SphereMesh" id="SphereMesh_wfiht"]
+radius = 1.0
+height = 2.0
+
+[sub_resource type="Skin" id="Skin_xao2h"]
+bind_count = 10
+bind/0/name = &""
+bind/0/bone = -1
+bind/0/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/1/name = &""
+bind/1/bone = -1
+bind/1/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/2/name = &""
+bind/2/bone = -1
+bind/2/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/3/name = &""
+bind/3/bone = -1
+bind/3/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/4/name = &""
+bind/4/bone = -1
+bind/4/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/5/name = &""
+bind/5/bone = -1
+bind/5/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/6/name = &""
+bind/6/bone = -1
+bind/6/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/7/name = &""
+bind/7/bone = -1
+bind/7/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/8/name = &""
+bind/8/bone = -1
+bind/8/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+bind/9/name = &""
+bind/9/bone = -1
+bind/9/pose = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f8yqj"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+
+[node name="ExplosionParticles" type="Node3D"]
+script = ExtResource("1_6uyo2")
+
+[node name="Base" type="GPUParticles3D" parent="."]
+material_override = SubResource("StandardMaterial3D_ukj0h")
+emitting = false
+amount = 10
+lifetime = 3.0
+one_shot = true
+explosiveness = 1.0
+process_material = ExtResource("1_lf6qb")
+draw_pass_1 = SubResource("SphereMesh_wfiht")
+draw_skin = SubResource("Skin_xao2h")
+
+[node name="Wide" type="GPUParticles3D" parent="."]
+material_override = SubResource("StandardMaterial3D_f8yqj")
+emitting = false
+amount = 50
+lifetime = 3.0
+one_shot = true
+explosiveness = 1.0
+process_material = ExtResource("2_ci64q")
+draw_pass_1 = SubResource("SphereMesh_wfiht")
+draw_skin = SubResource("Skin_xao2h")
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 3.0
+autostart = true
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

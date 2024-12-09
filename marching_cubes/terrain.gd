@@ -18,6 +18,8 @@ var edited_chunks: Dictionary
 
 var chunks: Dictionary
 
+@onready var missile_scene = preload("res://missile/missile.tscn")
+
 func noop():
 	pass
 
@@ -120,15 +122,15 @@ func show_chunks_around_player(player_chunk: Vector3i) -> void:
 		return
 	
 	for offset in range(0, max_offset + 1):
-		if offset >= lod4_offset && offset <= lod8_offset:
-			if show_chunks_circle(offset, vertical_offset, player_chunk, 8, thread):
-				return
-		if offset >= lod2_offset && offset <= lod4_offset:
-			if show_chunks_circle(offset, vertical_offset, player_chunk, 4, thread):
-				return
-		if offset >= render_offset && offset <= lod2_offset:
-			if show_chunks_circle(offset, vertical_offset, player_chunk, 2, thread):
-				return
+		#if offset >= lod4_offset && offset <= lod8_offset:
+			#if show_chunks_circle(offset, vertical_offset, player_chunk, 8, thread):
+				#return
+		#if offset >= lod2_offset && offset <= lod4_offset:
+			#if show_chunks_circle(offset, vertical_offset, player_chunk, 4, thread):
+				#return
+		#if offset >= render_offset && offset <= lod2_offset:
+			#if show_chunks_circle(offset, vertical_offset, player_chunk, 2, thread):
+				#return
 		if offset <= render_offset:
 			if show_chunks_circle(offset, vertical_offset, player_chunk, 1, thread):
 				return
@@ -177,8 +179,14 @@ func edit_terrain(coord: Vector3, radius: float, power: float) -> void:
 func check_player_inputs() -> void:
 	var shoot_ray : RayCast3D = %Player.get_shootray()
 	
-	if Input.is_action_just_pressed("explosion") and shoot_ray.is_colliding():
-		edit_terrain(shoot_ray.get_collision_point(), 6, 100)
+	if Input.is_action_just_pressed("explosion"):
+		var player = %Player
+		var missile = missile_scene.instantiate()
+		missile.direction = player.get_look_direction().rotated(Vector3.UP, randf_range(-PI/8, PI/8)).rotated(Vector3.LEFT, randf_range(-PI/8, PI/8))
+		add_child(missile)
+		missile.global_position = player.get_missile_spawn_point()
+		missile.set_orientation()
+
 		
 	if Input.is_action_just_pressed("build") and shoot_ray.is_colliding():
 		edit_terrain(shoot_ray.get_collision_point(), 8, -100)

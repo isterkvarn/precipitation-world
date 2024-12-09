@@ -275,19 +275,9 @@ const int triTable[256][16] = {
 		{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 		{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
-// Noise
-
-
-
-// Marcher
 
 // Invocations in the (x, y, z) dimension
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
-
-layout(set = 0, binding = 0, std430) restrict buffer NoiseFloatBuffer {
-    float noise[];
-}
-noise_buffer;
 
 layout(set = 0, binding = 1, std430) restrict buffer EditFloatBuffer {
     float edited[];
@@ -305,21 +295,143 @@ layout(set = 0, binding = 3, std430) coherent buffer Size
 	int size;
 };
 
-layout(set = 0, binding = 5, std430) coherent buffer Lod
+layout(set = 0, binding = 0, std430) coherent buffer Lod
 {
 	int lod;
 };
+
+layout(set = 0, binding = 5, std430) coherent buffer Pos
+{
+	float pos[];
+}
+position_buffer;
 
 layout(set = 0, binding = 4, std430) coherent buffer Threshold 
 {
 	float threshold;
 };
 
+layout(set = 0, binding = 7, std430) coherent buffer Seed 
+{
+	float seed;
+}
+seed_buffer;
+
+layout(set = 0, binding = 6, std430) coherent buffer IsEmpty 
+{
+	int is_empty;
+};
+
+
+// Noise
+
+float large_rnd_num = 43563.3458793;
+
+float psudeo_random_vec2(vec2 pos, float seed) {
+    
+    return 1.0 - 2.0 * fract(sin(dot(pos.xy, vec2(seed, 66.42213))) * large_rnd_num);
+}
+
+float fade(float t){
+    return ((6*t - 15)*t + 10)*t*t*t;
+}
+
+float lerp(float t, float a1, float a2){
+    return a1 + t*(a2-a1);
+}
+
+float perlin_noise(vec2 pos, float period, float freq, float seed) {
+
+    float bot = pos.y - mod(pos.y, period);
+    float top = bot + period;
+
+    float left = pos.x - mod(pos.x, period);
+    float right = left + period;
+
+    vec2 corner_one = vec2(left, top);
+    vec2 corner_two = vec2(right, top);
+    vec2 corner_three = vec2(left, bot);
+    vec2 corner_four = vec2(right, bot);
+
+    // Some magic numbers so each vector component is diffrent
+    vec2 vec_one = normalize(vec2(psudeo_random_vec2(corner_one / period, seed + 14.45), psudeo_random_vec2(corner_one / period, seed + 5.789)));
+    vec2 vec_two = normalize(vec2(psudeo_random_vec2(corner_two / period, seed + 14.45), psudeo_random_vec2(corner_two / period, seed + 5.789)));
+    vec2 vec_three = normalize(vec2(psudeo_random_vec2(corner_three / period, seed + 14.45), psudeo_random_vec2(corner_three / period, seed + 5.789)));
+    vec2 vec_four = normalize(vec2(psudeo_random_vec2(corner_four / period, seed + 14.45), psudeo_random_vec2(corner_four / period, seed + 5.789)));
+
+    float dot_one = dot(vec_one, corner_one - pos);
+    float dot_two = dot(vec_two, corner_two - pos);
+    float dot_three = dot(vec_three, corner_three - pos);
+    float dot_four = dot(vec_four, corner_four - pos);
+
+    float u = fade((pos.x - left)/period);
+    float v = fade((pos.y - bot)/period);
+
+    return lerp(u, lerp(v, dot_three, dot_one), lerp(v, dot_four, dot_two)) / period;
+}
+
+float perlin_noise_3d(vec3 pos, float period, float freq, float seed) {
+
+    int limit = int(pos.z - mod(pos.z, period));
+
+    float perlin_x = perlin_noise(vec2(pos.x, pos.y), period, freq, seed + limit/period);
+    float perlin_y = perlin_noise(vec2(pos.x, pos.y), period, freq, seed + limit/period + 1);
+
+    float transition = fade((pos.z - limit)/period);
+    return lerp(transition, perlin_x, perlin_y); 
+}
+
 float getAt(vec3 pos) {
+    float seed = seed_buffer.seed;
     int size_pad = size/lod + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
-    return noise_buffer.noise[idx] + edit_buffer.edited[idx];
+    float height = position_buffer.pos[1] * size + pos.y;
+    pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])); //+ vec3(freq, freq, freq);
+
+    float noise = 0;
+
+    float cave = max(5 * perlin_noise_3d(pos, 50, 0.0, seed + 1.0), 0.0);
+    cave += max(3.5 * perlin_noise_3d(pos, 16, 0.0, seed + 1.1), 0.0);
+    cave += max(0.5 * perlin_noise_3d(pos, 5, 0.0, seed + 1.2), 0.0);
+
+    noise += cave;
+
+    float ground = perlin_noise(vec2(pos.x, pos.z), 32*32, 0.1, seed + 1.3) * 200; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32*4, 0.1, seed + 1.4) * 63; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32, 0.1, seed + 1.5) * 18; 
+    ground += perlin_noise(vec2(pos.x, pos.z), 32/5, 0.1, seed + 1.6) * 1; 
+
+    ground = clamp(height + ground, -1.0, 1.0);
+
+    noise += ground;
+
+    //if (ground > 0.1){
+
+    //    float boulder = 0.8 * perlin_noise_3d(pos, 25, 0.0, 22.5);
+    //    boulder += 0.05 * perlin_noise_3d(pos, 5, 0.0, 42.5);
+    //    boulder += 0.01 * perlin_noise_3d(pos, 3, 0.0, 26.5);
+    //    noise += clamp(4 - 0.5 * height, -1.0, 5.0) * clamp(boulder, -1.0, 1.0);
+    //}
+
+
+    return clamp(noise + edit_buffer.edited[idx], -1.0, 1.0);
 }
+
+float getAtt(vec3 pos) {
+   int size_pad = size/lod + 1;
+   int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
+   pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])); //+ vec3(freq, freq, freq);
+   //float height = position_buffer.pos[1] * size + pos.y;
+   float noise = perlin_noise_3d(pos, size*2, 0.1, 24.22) * size * 2;
+   //noise += 0.2 * perlin_noise(vec2(pos.x, pos.z), size*1.5, 0.1, 24.22) * size * 2;
+   //noise += 0.01 * perlin_noise(vec2(pos.x, pos.z), size*0.1, 0.1, 24.22) * size * 2;
+   //noise = clamp(height + noise, -1.0, 1.0);
+
+   return clamp(noise + edit_buffer.edited[idx], -1.0, 1.0);
+}
+
+
+// Marcher
 
 vec3 interp(vec3 edgeVertex1, float valueAtVertex1, vec3 edgeVertex2, float valueAtVertex2)
 {
@@ -388,6 +500,9 @@ void main() {
         vertex_buffer.data[idx+6] = p3.x;
         vertex_buffer.data[idx+7] = p3.y;
         vertex_buffer.data[idx+8] = p3.z;
+
+        // Set so we know that buffer isnt empty
+        is_empty = 1;
     }
 
 
