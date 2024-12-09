@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://dcet325rfkdk5"]
+
+[ext_resource type="Shader" path="res://marching_cubes/terrain.gdshader" id="1_soj1f"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_drrp4"]
+render_priority = 0
+shader = ExtResource("1_soj1f")
+
+[node name="TerrainMesh" type="MeshInstance3D"]
+material_override = SubResource("ShaderMaterial_drrp4")
