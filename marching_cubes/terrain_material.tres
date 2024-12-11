@@ -8,3 +8,4 @@ shader = ExtResource("1_k8u8k")
 
 [resource]
 next_pass = SubResource("ShaderMaterial_78pvx")
+albedo_color = Color(1, 0.2, 0.2, 1)

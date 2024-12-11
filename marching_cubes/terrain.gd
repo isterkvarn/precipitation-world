@@ -75,7 +75,7 @@ func show_chunk(coord: Vector3i, lod: int, thread: Thread) -> bool:
 	return true
 
 func replace_chunk(chunk_name: String, chunk: MeshInstance3D):
-	chunk.material_override.transparency = false
+	#chunk.material_override.transparency = 0
 	if chunk_name in chunks:
 		chunks[chunk_name].queue_free()
 	chunks[chunk_name] = chunk
@@ -83,13 +83,13 @@ func replace_chunk(chunk_name: String, chunk: MeshInstance3D):
 func update_chunk(chunk_name: String, chunk: MeshInstance3D):
 	# Remove chunk if it already exit
 	add_child(chunk)
+	replace_chunk(chunk_name, chunk)
 	
-	var tween := create_tween()
-	chunk.material_override.transparency = true
-	print(chunk.material_override.albedo_color)
-	print(chunk.material_override.albedo_color.a)
-	tween.tween_property(chunk.material_override, "albedo_color:a", 1., 0.3).from(0.)
-	tween.tween_callback(replace_chunk.bind(chunk_name, chunk))
+	#var tween := create_tween()
+	#chunk.material_override.transparency = 3
+	#tween.tween_property(chunk.material_override, "albedo_color:a", 1., 3.3).from(0.)
+	#tween.tween_property(chunk, "position", chunk.position, 1.).from(Vector3.ZERO)
+	#tween.tween_callback(replace_chunk.bind(chunk_name, chunk))
 
 
 func show_chunks_circle(offset: int, vertical_offset: int, player_chunk: Vector3i, lod: int, thread: Thread):
