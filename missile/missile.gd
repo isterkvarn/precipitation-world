@@ -20,7 +20,7 @@ func _physics_process(delta: float) -> void:
 	position += velocity * delta
 
 func set_orientation():
-	look_at(position + direction)
+	look_at(position + velocity.normalized())
 
 func explode():
 	var exp = exp_scene.instantiate()
