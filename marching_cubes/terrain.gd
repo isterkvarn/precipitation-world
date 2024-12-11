@@ -122,15 +122,15 @@ func show_chunks_around_player(player_chunk: Vector3i) -> void:
 		return
 	
 	for offset in range(0, max_offset + 1):
-		#if offset >= lod4_offset && offset <= lod8_offset:
-			#if show_chunks_circle(offset, vertical_offset, player_chunk, 8, thread):
-				#return
-		#if offset >= lod2_offset && offset <= lod4_offset:
-			#if show_chunks_circle(offset, vertical_offset, player_chunk, 4, thread):
-				#return
-		#if offset >= render_offset && offset <= lod2_offset:
-			#if show_chunks_circle(offset, vertical_offset, player_chunk, 2, thread):
-				#return
+		if offset >= lod4_offset && offset <= lod8_offset:
+			if show_chunks_circle(offset, vertical_offset, player_chunk, 8, thread):
+				return
+		if offset >= lod2_offset && offset <= lod4_offset:
+			if show_chunks_circle(offset, vertical_offset, player_chunk, 4, thread):
+				return
+		if offset >= render_offset && offset <= lod2_offset:
+			if show_chunks_circle(offset, vertical_offset, player_chunk, 2, thread):
+				return
 		if offset <= render_offset:
 			if show_chunks_circle(offset, vertical_offset, player_chunk, 1, thread):
 				return

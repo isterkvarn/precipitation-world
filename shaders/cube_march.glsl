@@ -322,6 +322,7 @@ layout(set = 0, binding = 6, std430) coherent buffer IsEmpty
 	int is_empty;
 };
 
+int lod_size = size/lod;
 
 // Noise
 
@@ -383,7 +384,7 @@ float perlin_noise_3d(vec3 pos, float period, float freq, float seed) {
 
 float getAt(vec3 pos) {
     float seed = seed_buffer.seed;
-    int size_pad = size/lod + 1;
+    int size_pad = size + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
     float height = position_buffer.pos[1] * size + pos.y;
     pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])); //+ vec3(freq, freq, freq);
@@ -441,18 +442,18 @@ vec3 interp(vec3 edgeVertex1, float valueAtVertex1, vec3 edgeVertex2, float valu
 // The code we want to execute in each invocation
 void main() {
 
-    vec3 pos =  gl_GlobalInvocationID;
-    int lod_size = size/lod;
+    vec3 pos =  gl_GlobalInvocationID * lod;
+    // int lod_size = size/lod;
 
     float noiseResult[8] = {
-        getAt(pos + cornerOffsets[0]),
-        getAt(pos + cornerOffsets[1]),
-        getAt(pos + cornerOffsets[2]),
-        getAt(pos + cornerOffsets[3]),
-        getAt(pos + cornerOffsets[4]),
-        getAt(pos + cornerOffsets[5]),
-        getAt(pos + cornerOffsets[6]),
-        getAt(pos + cornerOffsets[7]),
+        getAt(pos + cornerOffsets[0] * lod),
+        getAt(pos + cornerOffsets[1] * lod),
+        getAt(pos + cornerOffsets[2] * lod),
+        getAt(pos + cornerOffsets[3] * lod),
+        getAt(pos + cornerOffsets[4] * lod),
+        getAt(pos + cornerOffsets[5] * lod),
+        getAt(pos + cornerOffsets[6] * lod),
+        getAt(pos + cornerOffsets[7] * lod),
     };
 
     uint triIndex = 0;
@@ -479,9 +480,9 @@ void main() {
         int e20 = edgeConnections[edges[i + 2]][0];
         int e21 = edgeConnections[edges[i + 2]][1];
 
-        vec3 p1 = lod * (interp(cornerOffsets[e00], noiseResult[e00], cornerOffsets[e01], noiseResult[e01]) + pos);
-        vec3 p2 = lod * (interp(cornerOffsets[e10], noiseResult[e10], cornerOffsets[e11], noiseResult[e11]) + pos);
-        vec3 p3 = lod * (interp(cornerOffsets[e20], noiseResult[e20], cornerOffsets[e21], noiseResult[e21]) + pos);
+        vec3 p1 = lod * interp(cornerOffsets[e00], noiseResult[e00], cornerOffsets[e01], noiseResult[e01]) + pos;
+        vec3 p2 = lod * interp(cornerOffsets[e10], noiseResult[e10], cornerOffsets[e11], noiseResult[e11]) + pos;
+        vec3 p3 = lod * interp(cornerOffsets[e20], noiseResult[e20], cornerOffsets[e21], noiseResult[e21]) + pos;
 
         // vec3 p1 = ((cornerOffsets[e00] + cornerOffsets[e01]) / 2 + pos) * lod;
         // vec3 p2 = ((cornerOffsets[e10] + cornerOffsets[e11]) / 2 + pos) * lod;
