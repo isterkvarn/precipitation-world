@@ -229,20 +229,21 @@ func march_chunk(coord: Vector3i, lod: int, TRI, edited) -> Array:
 	var newtime2 := Time.get_ticks_usec()
 	
 	
-	var ver_bytes = rd.buffer_get_data(vertex_buffer)
 	var is_empty_bytes = rd.buffer_get_data(is_empty_buffer)
-	rd_mutex.unlock()
-	
-	var vertex_output = ver_bytes.to_float32_array()
 	var is_empty_output = is_empty_bytes.to_int32_array()
-	
-	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
 	
 	# don't generate mesh if it's empty
 	# Check if there is something in buffer, dont want to waste time on air
 	var not_empty = is_empty_output[0] != 0
 	if not_empty:
+		var ver_bytes = rd.buffer_get_data(vertex_buffer)
+		rd_mutex.unlock()
+		var vertex_output = ver_bytes.to_float32_array()
 		generate_mesh(vertex_output, coord, lod)
+	else:
+		rd_mutex.unlock()
+	
+	#print(rd.buffer_get_data(noise_buffer).to_float32_array())
 
 	var newtime3 := Time.get_ticks_usec()
 	

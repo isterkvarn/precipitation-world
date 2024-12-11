@@ -9,8 +9,8 @@ void vertex() {
 
 void fragment() {
 	// Called for every pixel the material is visible on.
-	float slope_amount = abs(world_normal.g);
-	ALBEDO = vec3(1.0, 0.1, 0.1) * slope_amount  + (1.0 - slope_amount) * 0.5 * vec3(1.0, 0.1, 0.1);
+	float slope_amount = abs(world_normal.y);
+	ALBEDO = vec3(0.0, 0.1, 0.1) * slope_amount  + (1.0 - slope_amount) * 0.5 * vec3(1.0, 0.1, 0.1);
 	//COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 }
 
