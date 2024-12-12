@@ -80,7 +80,7 @@ func replace_chunk(chunk_name: String, chunk: MeshInstance3D):
 		chunks[chunk_name].queue_free()
 	chunks[chunk_name] = chunk
 
-func update_chunk(chunk_name: String, chunk: MeshInstance3D):
+func update_chunk(chunk_name: String, lod: int, chunk: MeshInstance3D):
 	# Remove chunk if it already exit
 	add_child(chunk)
 	replace_chunk(chunk_name, chunk)
@@ -191,6 +191,8 @@ func check_player_inputs() -> void:
 	if Input.is_action_just_pressed("build") and shoot_ray.is_colliding():
 		edit_terrain(shoot_ray.get_collision_point(), 8, -100)
 
+var total_time_ttf := 0.
+
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
 	check_player_inputs()
@@ -200,7 +202,14 @@ func _process(_delta: float) -> void:
 		#chunk_thread.wait_to_finish()
 		
 	var player_chunk = Vector3i(floor(player.position.x / CHUNK_SIZE), floor(player.position.y / CHUNK_SIZE), floor(player.position.z / CHUNK_SIZE))
+	var start = Time.get_ticks_usec()
 	show_chunks_around_player(player_chunk)
+	var end = Time.get_ticks_usec()
+	var time = (end - start) / 1000000.0
+	total_time_ttf += time
+	$"ttf chunk".text = "time to find a chunk: " + str(time) + " total time " + str(total_time_ttf)
+
+	
 
 # tables from https://github.com/jbernardic/Godot-Smooth-Voxels/blob/main/Scripts/Terrain.gd
 const TRIANGULATIONS = [

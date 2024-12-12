@@ -170,9 +170,9 @@ func generate_mesh(vertex_output, coord, lod: int):
 	
 	#add_child(marched) deffered because of threading
 	marched.name = str(coord)
-	scene.update_chunk.call_deferred(str(coord), marched)
+	scene.update_chunk.call_deferred(str(coord), lod, marched)
 
-	print("time to generate vert cpu: ", (vert_end_time - vert_start_time) / 1000000.0)
+	#print("time to generate vert cpu: ", (vert_end_time - vert_start_time) / 1000000.0)
 	#print("time to generate polygons gpu: ", (newtime2 - newtime1) / 1000000.0)
 	#print("time to generate mesh cpu: ", (newtime3 - newtime2) / 1000000.0)
 	#print("Total time ", (newtime4 - time) / 1000000.0)

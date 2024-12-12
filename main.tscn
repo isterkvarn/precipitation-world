@@ -36,7 +36,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 37.6093, -0.80521)
 offset_top = 20.0
 offset_right = 197.0
 offset_bottom = 43.0
-text = "Time for chunk rendering"
+text = "Time for chunk rendering
+lod"
+
+[node name="ttf chunk" type="Label" parent="Terrain"]
+offset_top = 70.0
+offset_right = 156.0
+offset_bottom = 93.0
+text = "time to find a chunk"
 
 [node name="fps_counter" type="Label" parent="."]
 offset_right = 40.0
