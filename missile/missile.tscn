@@ -40,7 +40,9 @@ material_override = SubResource("StandardMaterial3D_ot744")
 mesh = SubResource("CylinderMesh_vu7qv")
 
 [node name="Timer" type="Timer" parent="."]
-wait_time = 6.0
+wait_time = 3.0
+one_shot = true
+autostart = true
 
 [node name="Trail" parent="." instance=ExtResource("2_lpt68")]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0.788111)

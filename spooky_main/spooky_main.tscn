@@ -21,6 +21,11 @@ unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 37.6093, -0.80521)
 
 [node name="Terrain" parent="." instance=ExtResource("2_pqn8c")]
+RENDER_DISTANCE = 32
+LOD2_DISTANCE = 48
+LOD4_DISTANCE = 64
+LOD8_DISTANCE = 128
+threshold = 0.0
 
 [node name="chunk_time" type="Label" parent="Terrain"]
 offset_top = 20.0

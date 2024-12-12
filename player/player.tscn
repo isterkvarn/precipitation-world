@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://player/player.gd" id="1_mrk0t"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_wja4t"]
-radius = 0.3
-height = 0.8
+radius = 0.2
+height = 1.0
 
 [node name="Player" type="CharacterBody3D" groups=["player"]]
 floor_max_angle = 1.0472
@@ -19,7 +19,7 @@ light_energy = 3.0
 omni_range = 30.0
 
 [node name="RotationHelper" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="RotationHelper"]
 visible = false
