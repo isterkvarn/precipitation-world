@@ -1,11 +1,11 @@
 extends Node3D
 
 @export var CHUNK_SIZE := 32 # number of cubes in a chunk 
-@export var RENDER_DISTANCE := 6 # in chunks
+@export var RENDER_DISTANCE := 16 # in chunks
 @export var VERTICAL_RENDER_DISTANCE := 6
-@export var LOD2_DISTANCE := 10
-@export var LOD4_DISTANCE := 18
-@export var LOD8_DISTANCE := 32
+@export var LOD2_DISTANCE := 24
+@export var LOD4_DISTANCE := 32
+@export var LOD8_DISTANCE := 64
 @export var threshold := 0.1
 
 var marcher: Marcher = GpuMarcher.new(self, CHUNK_SIZE, threshold)
@@ -179,7 +179,7 @@ func edit_terrain(coord: Vector3, radius: float, power: float) -> void:
 func check_player_inputs() -> void:
 	var shoot_ray : RayCast3D = %Player.get_shootray()
 	
-	if Input.is_action_just_pressed("explosion"):
+	if Input.is_action_pressed("explosion"):
 		var player = %Player
 		var missile = missile_scene.instantiate()
 		missile.direction = player.get_look_direction().rotated(Vector3.UP, randf_range(-PI/8, PI/8)).rotated(Vector3.LEFT, randf_range(-PI/8, PI/8))

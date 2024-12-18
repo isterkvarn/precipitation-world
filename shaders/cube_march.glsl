@@ -276,6 +276,8 @@ const int triTable[256][16] = {
 		{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 
+// Buffed definitions
+
 // Invocations in the (x, y, z) dimension
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
@@ -324,7 +326,7 @@ layout(set = 0, binding = 6, std430) coherent buffer IsEmpty
 
 int lod_size = size/lod;
 
-// Noise
+// Random
 
 float large_rnd_num = 43563.3458793;
 
@@ -332,6 +334,103 @@ float psudeo_random_vec2(vec2 pos, float seed) {
     
     return 1.0 - 2.0 * fract(sin(dot(pos.xy, vec2(seed, 66.42213))) * large_rnd_num);
 }
+
+// Fractal
+
+void plane_fold(inout vec4 z, const vec3 n, const float d)
+{
+    z.xyz -= 2.0 * min(0.0, dot(z.xyz, n) - d) * n;
+}
+
+void box_fold(inout vec4 z, const float fold_limit)
+{
+    z.xyz = clamp(z.xyz, -fold_limit, fold_limit) * 2 - z.xyz;
+}
+
+void sphere_fold(inout vec4 z, inout float dz, const float fixedRadius) {
+    float minRadius = 0.1;
+    float r = dot(z,z);
+    if (r<minRadius) { 
+            // linear inner scaling
+            float temp = (fixedRadius/minRadius);
+            z *= temp;
+            dz*= temp;
+    } else if (r<fixedRadius) { 
+            // this is the actual sphere inversion
+            float temp =(fixedRadius/r);
+            z *= temp;
+            dz*= temp;
+    }
+}
+
+
+void octahedral_symmetry_fold(inout vec4 point, const float limit)
+{
+    point = abs(point);
+    if (point.x - point.y < limit)
+    {
+        point.xy = point.yx;
+    }
+    if (point.x - point.z < limit)
+    {
+        point.xz = point.zx;
+    }
+    if (point.y - point.z < limit)
+    {
+        point.yz = point.zy;
+    }
+}
+
+void sierpinski_fold(inout vec4 z, const float limit) {
+	z.xy -= min(z.x + z.y + limit, 0.0);
+	z.xz -= min(z.x + z.z + limit, 0.0);
+	z.yz -= min(z.y + z.z + limit, 0.0);
+}
+
+void mengerFold(inout vec4 z, const float limit) {
+	float a = min(z.x - z.y + limit, 0.0);
+	z.x -= a;
+	z.y += a;
+	a = min(z.x - z.z + limit, 0.0);
+	z.x -= a;
+	z.z += a;
+	a = min(z.y - z.z + limit, 0.0);
+	z.y -= a;
+	z.z += a;
+}
+
+float estimate_distance(const vec3 p, vec2 chunk_pos, float seed)
+{
+    vec4 z = vec4(p, 0);
+    float dr = 1.0;
+
+    const float BASE_OFF = 4.0;
+    const float RND_OFF = 8.0;
+
+    float rnd_off_x = BASE_OFF - RND_OFF * psudeo_random_vec2(chunk_pos, seed + 0.1); 
+    float rnd_off_y = BASE_OFF - RND_OFF * psudeo_random_vec2(chunk_pos, seed + 0.2); 
+    float rnd_off_z = BASE_OFF - RND_OFF * psudeo_random_vec2(chunk_pos, seed + 0.3); 
+
+    float est_size = 3.4 - 0.2 * psudeo_random_vec2(chunk_pos, seed + 0.5);
+    vec4 offset = vec4(rnd_off_x, rnd_off_y, rnd_off_z, 0.0);
+
+    const float sierp_rnd = psudeo_random_vec2(chunk_pos, seed + 0.4);
+
+    for (int i = 0; i < 8; i++)
+    {
+        /* INSERT CODE */
+        sierpinski_fold(z, 12.0 - 1.5 * sierp_rnd);
+        box_fold(z, 20.0);
+        //sphere_fold(z, dr, 10.0);
+
+        z = z * est_size + offset * (est_size);
+        dr = dr * abs(est_size);
+    }
+
+    return length(z) / abs(dr) - 1.1;
+}
+
+// Noise
 
 float fade(float t){
     return ((6*t - 15)*t + 10)*t*t*t;
@@ -382,13 +481,13 @@ float perlin_noise_3d(vec3 pos, float period, float freq, float seed) {
     return lerp(transition, perlin_x, perlin_y); 
 }
 
-
 float getAt(vec3 pos) {
     float seed = seed_buffer.seed;
     int size_pad = size + 1;
     int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
     float height = position_buffer.pos[1] * size + pos.y;
-    pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])); //+ vec3(freq, freq, freq);
+    vec3 chunk_pos = vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2]);
+    pos = (pos + size*chunk_pos);
 
     float biome = (clamp(perlin_noise(vec2(pos.x, pos.z), 512, 0.1, seed + 2.5)*6, -1.0, 1.0) + 1.0)/2; 
 
@@ -423,46 +522,18 @@ float getAt(vec3 pos) {
     //    noise += clamp(4 - 0.5 * height, -1.0, 5.0) * clamp(boulder, -1.0, 1.0);
     //}
 
+    int frac_spawn_area = 18;
+    vec2 frac_chunk = vec2(chunk_pos.x - mod(chunk_pos.x, frac_spawn_area), chunk_pos.z - mod(chunk_pos.z, frac_spawn_area)) + vec2(8.0, 8.0);
+
+    vec3 frac_spawn = vec3(size*frac_chunk.x, 60, size*frac_chunk.y) + size * vec3((frac_spawn_area - 16.0) * psudeo_random_vec2(frac_chunk, seed+19.0), 0, (frac_spawn_area - 16.0) * psudeo_random_vec2(frac_chunk, seed+21.121));
+
+    if (length(frac_spawn - pos) < 8.0 * size)
+    {
+        noise += clamp(2*estimate_distance(pos - frac_spawn, frac_chunk, seed+11.1223), -2.0, 0.1);
+    }
 
     return clamp(noise + edit_buffer.edited[idx], -1.0, 1.0);
 }
-
-float getAtfirst(vec3 pos) {
-    float seed = seed_buffer.seed;
-    int size_pad = size + 1;
-    int idx = int(int(pos.z) + int(pos.y) * size_pad + int(pos.x) * size_pad * size_pad);
-    float height = position_buffer.pos[1] * size + pos.y;
-    pos = (pos + size * vec3(position_buffer.pos[0], position_buffer.pos[1], position_buffer.pos[2])); //+ vec3(freq, freq, freq);
-
-    float noise = 0;
-
-    float cave = max(5 * perlin_noise_3d(pos, 50, 0.0, seed + 1.0), 0.0);
-    cave += max(3.5 * perlin_noise_3d(pos, 16, 0.0, seed + 1.1), 0.0);
-    cave += max(0.5 * perlin_noise_3d(pos, 5, 0.0, seed + 1.2), 0.0);
-
-    noise += cave;
-
-    float ground = perlin_noise(vec2(pos.x, pos.z), 32*32, 0.1, seed + 1.3) * 200; 
-    ground += perlin_noise(vec2(pos.x, pos.z), 32*4, 0.1, seed + 1.4) * 63; 
-    ground += perlin_noise(vec2(pos.x, pos.z), 32, 0.1, seed + 1.5) * 18; 
-    ground += perlin_noise(vec2(pos.x, pos.z), 32/5, 0.1, seed + 1.6) * 1; 
-
-    ground = clamp(height + ground, -1.0, 1.0);
-
-    noise += ground;
-
-    //if (ground > 0.1){
-
-    //    float boulder = 0.8 * perlin_noise_3d(pos, 25, 0.0, 22.5);
-    //    boulder += 0.05 * perlin_noise_3d(pos, 5, 0.0, 42.5);
-    //    boulder += 0.01 * perlin_noise_3d(pos, 3, 0.0, 26.5);
-    //    noise += clamp(4 - 0.5 * height, -1.0, 5.0) * clamp(boulder, -1.0, 1.0);
-    //}
-
-
-    return clamp(noise + edit_buffer.edited[idx], -1.0, 1.0);
-}
-
 
 // Marcher
 
