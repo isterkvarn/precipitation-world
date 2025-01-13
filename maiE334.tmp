@@ -1,14 +1,17 @@
 [gd_scene load_steps=13 format=3 uid="uid://cmgoblymihel6"]
 
-[ext_resource type="Material" uid="uid://w8vjkp0xgrwl" path="res://shaders/clouds.tres" id="1_f5ghu"]
 [ext_resource type="PackedScene" uid="uid://cslf0t6enf4t5" path="res://player/player.tscn" id="2_nqgyn"]
 [ext_resource type="Script" path="res://rain/rain_behaviour.gd" id="4_57g32"]
 [ext_resource type="PackedScene" uid="uid://butfi15jwpi8p" path="res://marching_cubes/terrain.tscn" id="5_bla7e"]
 [ext_resource type="Script" path="res://rain/rain_cycle.gd" id="5_f2h0r"]
 [ext_resource type="Script" path="res://fps_counter.gd" id="6_aqckv"]
 
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_gcigu"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
 [sub_resource type="Sky" id="Sky_u314a"]
-sky_material = ExtResource("1_f5ghu")
+sky_material = SubResource("ProceduralSkyMaterial_gcigu")
 
 [sub_resource type="Environment" id="Environment_1dvrv"]
 background_mode = 2
@@ -18,7 +21,7 @@ glow_enabled = true
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_thft0"]
 emission_shape = 3
-emission_box_extents = Vector3(60, 0.5, 60)
+emission_box_extents = Vector3(25, 0.5, 25)
 angle_min = 1.07288e-05
 angle_max = 1.07288e-05
 direction = Vector3(0, -1, 0)
@@ -38,7 +41,6 @@ transparency = 1
 cull_mode = 2
 shading_mode = 0
 vertex_color_use_as_albedo = true
-albedo_color = Color(0.807843, 0.890196, 0.913725, 0.407843)
 use_particle_trails = true
 
 [sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_24ewq"]
@@ -83,7 +85,7 @@ follow_camera_enabled = true
 
 [node name="Rain" type="GPUParticles3D" parent="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 0)
-amount = 4000
+amount = 3000
 lifetime = 4.0
 randomness = 0.65
 visibility_aabb = AABB(-10, -100, -10, 20, 100, 20)
