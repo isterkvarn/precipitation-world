@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://chcur3id34p0s"]
 
 [ext_resource type="PackedScene" uid="uid://cslf0t6enf4t5" path="res://player/player.tscn" id="1_w7x5f"]
-[ext_resource type="Environment" path="res://player/fog_env.tres" id="2_l02h4"]
+[ext_resource type="Environment" uid="uid://c07a1gbxrsk8g" path="res://player/fog_env.tres" id="2_l02h4"]
 [ext_resource type="PackedScene" uid="uid://butfi15jwpi8p" path="res://marching_cubes/terrain.tscn" id="2_pqn8c"]
 [ext_resource type="Script" path="res://fps_counter.gd" id="4_x0jy6"]
 
