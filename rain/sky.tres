@@ -1,6 +1,6 @@
-[gd_resource type="Sky" load_steps=2 format=3 uid="uid://468lbgq8r5em"]
+[gd_resource type="Sky" load_steps=2 format=3 uid="uid://dk1caxe8fh225"]
 
-[ext_resource type="Material" uid="uid://w8vjkp0xgrwl" path="res://shaders/clouds.tres" id="1_avu3a"]
+[ext_resource type="Material" uid="uid://w8vjkp0xgrwl" path="res://shaders/clouds_yellow.tres" id="1_ucdch"]
 
 [resource]
-sky_material = ExtResource("1_avu3a")
+sky_material = ExtResource("1_ucdch")

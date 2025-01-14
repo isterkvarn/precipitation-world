@@ -94,7 +94,7 @@ void sky() {
 "
 
 [sub_resource type="Gradient" id="Gradient_rc5cy"]
-colors = PackedColorArray(0.807843, 0.560784, 0.188235, 1, 0.276187, 0.179552, 0.0312686, 1)
+colors = PackedColorArray(0.220601, 0.140186, 0.0201228, 1, 0.807843, 0.560784, 0.188235, 1)
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_b176i"]
 
@@ -115,7 +115,7 @@ noise = SubResource("FastNoiseLite_wikx0")
 
 [resource]
 shader = SubResource("Shader_4pfe2")
-shader_parameter/sky_top_color = Color(0.611649, 0.4155, 0.188742, 1)
+shader_parameter/sky_top_color = Color(0.537255, 0.345098, 0.286275, 1)
 shader_parameter/sky_horizon_color = Color(0.537255, 0.345098, 0.286275, 1)
 shader_parameter/sky_curve = 0.15
 shader_parameter/sky_energy = 1.0

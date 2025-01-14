@@ -1,15 +1,18 @@
-[gd_scene load_steps=12 format=3 uid="uid://cmgoblymihel6"]
+[gd_scene load_steps=13 format=3 uid="uid://cmgoblymihel6"]
 
-[ext_resource type="Sky" uid="uid://468lbgq8r5em" path="res://rain/sky.tres" id="1_qk5ll"]
+[ext_resource type="Material" uid="uid://bydlaev7vosyl" path="res://shaders/clouds_blue.tres" id="1_4f6mk"]
 [ext_resource type="PackedScene" uid="uid://cslf0t6enf4t5" path="res://player/player.tscn" id="2_nqgyn"]
 [ext_resource type="Script" path="res://rain/rain_behaviour.gd" id="4_57g32"]
 [ext_resource type="PackedScene" uid="uid://butfi15jwpi8p" path="res://marching_cubes/terrain.tscn" id="5_bla7e"]
 [ext_resource type="Script" path="res://rain/rain_cycle.gd" id="5_f2h0r"]
 [ext_resource type="Script" path="res://fps_counter.gd" id="6_aqckv"]
 
+[sub_resource type="Sky" id="Sky_u314a"]
+sky_material = ExtResource("1_4f6mk")
+
 [sub_resource type="Environment" id="Environment_1dvrv"]
 background_mode = 2
-sky = ExtResource("1_qk5ll")
+sky = SubResource("Sky_u314a")
 tonemap_mode = 2
 glow_enabled = true
 
@@ -25,12 +28,12 @@ initial_velocity_max = 15.0
 color = Color(0.694808, 0.798556, 0.852953, 1)
 collision_mode = 2
 
-[sub_resource type="Curve" id="Curve_5u06m"]
+[sub_resource type="Curve" id="Curve_x38h8"]
 max_value = 0.1
 _data = [Vector2(0, 0.000433534), 0.0, 0.0, 0, 0, Vector2(0.0780142, 0.0605491), 0.380771, 0.380771, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 3
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mbpky"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_g7cgn"]
 transparency = 1
 cull_mode = 2
 shading_mode = 0
@@ -39,10 +42,10 @@ albedo_color = Color(0.807843, 0.890196, 0.913725, 0.407843)
 use_particle_trails = true
 
 [sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_24ewq"]
-material = SubResource("StandardMaterial3D_mbpky")
+material = SubResource("StandardMaterial3D_g7cgn")
 size = 0.4
 section_length = 0.1
-curve = SubResource("Curve_5u06m")
+curve = SubResource("Curve_x38h8")
 
 [node name="Node3D2" type="Node3D"]
 
@@ -55,7 +58,7 @@ shadow_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("2_nqgyn")]
 unique_name_in_owner = true
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 176.094, -0.80521)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 37.6093, -0.80521)
 
 [node name="Terrain" parent="." instance=ExtResource("5_bla7e")]
 
@@ -63,8 +66,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.4355, 176.094, -0.80521)
 offset_top = 20.0
 offset_right = 197.0
 offset_bottom = 43.0
-text = "Time for chunk rendering
-lod"
+text = "Time for chunk rendering"
 
 [node name="ttf chunk" type="Label" parent="Terrain"]
 offset_top = 70.0
