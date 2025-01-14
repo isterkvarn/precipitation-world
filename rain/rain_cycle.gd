@@ -56,9 +56,9 @@ func _process(delta):
 		amount_ratio = 0
 		
 	elif state == 1:
-		if (timer >= 3.2 and timer <= 3.3) or (timer >= 6.5 and timer <= 6.6):
-			sky_material.set_shader_parameter("light_multiplier", min(1.0, 1.2-timer/transition_duration))
-			temp_light = min(1.0, 1.2-timer/transition_duration)
+		#if (timer >= 3.2 and timer <= 3.3) or (timer >= 6.5 and timer <= 6.6):
+		sky_material.set_shader_parameter("light_multiplier", min(1.0, 1.2-timer/transition_duration))
+		temp_light = min(1.0, 1.2-timer/transition_duration)
 		noise.frequency = (noisemax+noisemin)/2
 		amount_ratio = timer/transition_duration
 		
@@ -69,9 +69,7 @@ func _process(delta):
 		noise.frequency = noisemin
 		amount_ratio = 1
 	elif state == 3:
-		if (timer >= 3.2 and timer <= 3.3) or (timer >= 6.5 and timer <= 6.6):
-			sky_material.set_shader_parameter("light_multiplier", min(1.0, 0.2+timer/transition_duration))
-			temp_light = min(1.0, 0.2+timer/transition_duration)
+		#if (timer >= 3.2 and timer <= 3.3) or (timer >= 6.5 and timer <= 6.6):
+		sky_material.set_shader_parameter("light_multiplier", min(1.0, 0.2+timer/transition_duration))
+		temp_light = min(1.0, 0.2+timer/transition_duration)
 		amount_ratio = 1-timer/transition_duration
-		
-	print(get_node("../../WorldEnvironment").environment.sky.sky_material.get_shader_parameter("cloud_texture").noise.frequency)

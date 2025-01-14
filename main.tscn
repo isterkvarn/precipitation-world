@@ -43,7 +43,7 @@ use_particle_trails = true
 
 [sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_24ewq"]
 material = SubResource("StandardMaterial3D_g7cgn")
-size = 0.4
+size = 0.5
 section_length = 0.1
 curve = SubResource("Curve_x38h8")
 
