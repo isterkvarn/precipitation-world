@@ -66,6 +66,9 @@ current = true
 [node name="ShootRay" type="RayCast3D" parent="RotationHelper"]
 target_position = Vector3(0, 0, -100)
 
+[node name="MissileSpawn" type="Marker3D" parent="RotationHelper"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.926272)
+
 [node name="Node3D" type="Node3D" parent="."]
 visible = false
 
@@ -84,6 +87,3 @@ trail_enabled = true
 trail_lifetime = 0.15
 process_material = SubResource("ParticleProcessMaterial_beyi1")
 draw_pass_1 = SubResource("RibbonTrailMesh_08dnw")
-
-[node name="MissileSpawn" type="Marker3D" parent="RotationHelper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.926272)
