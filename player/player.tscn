@@ -1,10 +1,40 @@
-[gd_scene load_steps=3 format=3 uid="uid://cslf0t6enf4t5"]
+[gd_scene load_steps=7 format=3 uid="uid://cslf0t6enf4t5"]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_mrk0t"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_wja4t"]
-radius = 0.2
-height = 1.0
+radius = 0.3
+height = 0.8
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_beyi1"]
+emission_shape = 3
+emission_box_extents = Vector3(25, 0.5, 25)
+angle_min = 1.07288e-05
+angle_max = 1.07288e-05
+direction = Vector3(0, -1, 0)
+spread = 5.0
+initial_velocity_min = 15.0
+initial_velocity_max = 15.0
+color = Color(0.694808, 0.798556, 0.852953, 1)
+collision_mode = 2
+
+[sub_resource type="Curve" id="Curve_1yktc"]
+max_value = 0.1
+_data = [Vector2(0, 0.000433534), 0.0, 0.0, 0, 0, Vector2(0.0780142, 0.0605491), 0.380771, 0.380771, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pyn5n"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+use_particle_trails = true
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_08dnw"]
+material = SubResource("StandardMaterial3D_pyn5n")
+size = 0.4
+section_length = 0.1
+curve = SubResource("Curve_1yktc")
 
 [node name="Player" type="CharacterBody3D" groups=["player"]]
 floor_max_angle = 1.0472
@@ -19,7 +49,7 @@ light_energy = 3.0
 omni_range = 30.0
 
 [node name="RotationHelper" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="RotationHelper"]
 visible = false
@@ -32,9 +62,29 @@ spot_angle_attenuation = 0.450625
 [node name="Camera3D" type="Camera3D" parent="RotationHelper"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0369054, 0)
 current = true
+far = 500.0
 
 [node name="ShootRay" type="RayCast3D" parent="RotationHelper"]
 target_position = Vector3(0, 0, -100)
 
 [node name="MissileSpawn" type="Marker3D" parent="RotationHelper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.926272)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.86778)
+
+[node name="Node3D" type="Node3D" parent="."]
+visible = false
+
+[node name="GPUParticlesCollisionHeightField3D" type="GPUParticlesCollisionHeightField3D" parent="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
+size = Vector3(20, 20, 20)
+follow_camera_enabled = true
+
+[node name="Rain" type="GPUParticles3D" parent="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.0368, 12.9617, -0.0165839)
+amount = 3000
+lifetime = 2.0
+randomness = 0.65
+visibility_aabb = AABB(-10, -20, -10, 20, 20, 20)
+trail_enabled = true
+trail_lifetime = 0.15
+process_material = SubResource("ParticleProcessMaterial_beyi1")
+draw_pass_1 = SubResource("RibbonTrailMesh_08dnw")
