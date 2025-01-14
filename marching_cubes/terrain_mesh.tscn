@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://b84hkjfgys5ab"]
+[gd_scene load_steps=3 format=3 uid="uid://i7y0jq8c8wes"]
 
 [ext_resource type="Shader" path="res://marching_cubes/terrain.gdshader" id="1_soj1f"]
 
