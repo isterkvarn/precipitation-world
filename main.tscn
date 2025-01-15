@@ -1,6 +1,6 @@
 [gd_scene load_steps=13 format=3 uid="uid://cmgoblymihel6"]
 
-[ext_resource type="Material" uid="uid://bydlaev7vosyl" path="res://shaders/clouds_blue.tres" id="1_4f6mk"]
+[ext_resource type="Material" uid="uid://qbs67wfo2ldk" path="res://shaders/clouds_blue.tres" id="1_4f6mk"]
 [ext_resource type="PackedScene" uid="uid://cslf0t6enf4t5" path="res://player/player.tscn" id="2_nqgyn"]
 [ext_resource type="Script" path="res://rain/rain_behaviour.gd" id="4_57g32"]
 [ext_resource type="PackedScene" uid="uid://butfi15jwpi8p" path="res://marching_cubes/terrain.tscn" id="5_bla7e"]
@@ -83,7 +83,7 @@ script = ExtResource("6_aqckv")
 script = ExtResource("4_57g32")
 
 [node name="GPUParticlesCollisionHeightField3D" type="GPUParticlesCollisionHeightField3D" parent="Node3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 0)
 size = Vector3(56.32, 35, 60.23)
 follow_camera_enabled = true
 

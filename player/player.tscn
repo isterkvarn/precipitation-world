@@ -68,7 +68,7 @@ far = 500.0
 target_position = Vector3(0, 0, -100)
 
 [node name="MissileSpawn" type="Marker3D" parent="RotationHelper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.86778)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.197633, -2.33411)
 
 [node name="Node3D" type="Node3D" parent="."]
 visible = false

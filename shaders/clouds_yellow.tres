@@ -1,4 +1,4 @@
-[gd_resource type="ShaderMaterial" load_steps=7 format=3 uid="uid://w8vjkp0xgrwl"]
+[gd_resource type="ShaderMaterial" load_steps=7 format=3 uid="uid://dfa3vyajnxx11"]
 
 [sub_resource type="Shader" id="Shader_4pfe2"]
 code = "
